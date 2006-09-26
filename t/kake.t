@@ -6,25 +6,22 @@ use strict;
 use warnings;
 
 use Test::More tests => 7;
+use Text::MediawikiFormat as => 'wikiformat', implicit_links => 1;
 
-use Text::MediawikiFormat as => 'wikiformat';
-
-my $wikitext = "
+    my $wikitext = "
 WikiTest
 
 code: foo bar baz
 
 ";
 
-my %format_tags = (
-    indent => "",  # same problem if I put qr// here
-    blocks => { code => qr/^code: / },
-	indented => { code => 0 },
-);
+    my %format_tags = (
+	blocks => {code => qr/^code: /},
+    );
 
-my $cooked = wikiformat($wikitext, \%format_tags, {} );
-like( $cooked, qr|<code>foo bar baz\n</code>|,
-	'unindented code markers should still work' );
+    my $cooked = wikiformat ($wikitext, \%format_tags);
+    like $cooked, qr|<pre>foo bar baz\n</pre>|,
+	 'unindented code markers should still work';
 
 $wikitext = <<WIKI;
 
@@ -35,14 +32,14 @@ WIKI
 
 %format_tags = (
 	indent   => qr/^(?:\t+|\s{4,}|\*?(?=\*+))/,
-	blocks   => { unordered => qr/^\s*\*+\s*/ },
-	nests    => { unordered => 1 },
+	blocks   => {unordered => qr/^\s*\*+\s*/},
+	nests    => {unordered => 1},
 );
 
-$cooked = wikiformat($wikitext, \%format_tags );
+$cooked = wikiformat $wikitext, \%format_tags;
 
-like( $cooked, qr/<li>foo/,               'first level of unordered list' );
-like( $cooked, qr/<ul>.+?<li>bar<\/li>/s, 'second level of unordered list' );
+like $cooked, qr/<li>foo/, 'first level of unordered list';
+like $cooked, qr/<ul>.+?<li>bar<\/li>/s, 'second level of unordered list';
 
 $wikitext = <<WIKI;
 
@@ -50,16 +47,16 @@ $wikitext = <<WIKI;
 
 WIKI
 
-my @blocks = @{ $Text::MediawikiFormat::tags{blockorder} };
+my @blocks = @{$Text::MediawikiFormat::tags{blockorder}};
 %format_tags = (
-	blocks     => { definition => qr/^:\s*/ },
-	indented   => { definition => 0 },
-	definition => [ "<dl>\n", "</dl>\n", "<dt><dd>", "\n" ],
-	blockorder => [ 'definition', @blocks ],
+	blocks     => {definition => qr/^:\s*/},
+	indented   => {definition => 0},
+	definition => ["<dl>\n", "</dl>\n", "<dt><dd>", "\n"],
+	blockorder => ['definition', @blocks],
 );
 
-$cooked = wikiformat($wikitext, \%format_tags );
-like( $cooked, qr/<dt><dd>boing/, 'definition list works' );
+$cooked = wikiformat $wikitext, \%format_tags;
+like $cooked, qr/<dt><dd>boing/, 'definition list works';
 
 $wikitext =<<WIKITEXT;
 
@@ -72,10 +69,11 @@ $wikitext =<<WIKITEXT;
 WIKITEXT
 
 $ENV{SHOW} = 1;
-$cooked = wikiformat($wikitext, {}, { prefix => 'wiki.pl?' });
+$cooked = wikiformat $wikitext, {unformatted_blocks => [qw(code nowiki pre)]},
+		     {prefix => 'wiki.pl?', implicit_links => 1};
 
-like( $cooked, qr|<h4>Welcome</h4>|, 'headings work' );
-like( $cooked,
-      qr|<h4><a href="wiki.pl\?LinkInAHeader">LinkInAHeader</a></h4>|,
-      '... links work in headers' );
-like( $cooked, qr|<h4>Header with an = in</h4>|, '...headers may contain =' );
+like $cooked, qr|<h4>Welcome</h4>|, 'headings work';
+like $cooked,
+     qr|<h4><a href='wiki.pl\?LinkInAHeader'>LinkInAHeader</a></h4>|,
+     '... links work in headers';
+like $cooked, qr|<h4>Header with an = in</h4>|, '...headers may contain =';

@@ -1,4 +1,8 @@
-0.79
+0.02
+	- Improved documentation.
+	- Defaults to Mediawiki behaviors.
+
+0.01	September 20, 2006
 	- Avoid applying wikification when block level allowed html elements
 	  are present, when process_html option is set.
 	- content of list items is now formatted by default.
@@ -9,6 +13,12 @@
 	- merge_hash() now copies hashes.
 	- several nesting bugs fixed, re RT 21269.
 	- code refs now preserve indenting after the "  ", not before.
+
+
+
+###
+### as Text::WikiFormat
+###
 
 0.78
 	Thu Mar 30 06:13:42 UTC 2006

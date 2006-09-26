@@ -27,8 +27,8 @@ sub new
 {
 	my ($class, %args) = @_;
 
-	$args{text}        =   $class->arg_to_ref( delete $args{text} || '' );
-	$args{args}        = [ $class->arg_to_ref( delete $args{args} || [] ) ];
+	$args{text} = $class->arg_to_ref (delete $args{text} || '');
+	$args{args} = [$class->arg_to_ref (delete $args{args} || [])];
 
 	bless \%args, $class;
 }
@@ -77,7 +77,8 @@ sub formatted_text
 sub formatter
 {
 	my ($self, $line) = @_;
-	Text::MediawikiFormat::format_line( $line, $self->tags(), $self->opts() );
+	Text::MediawikiFormat::format_line ($line, $self->tags(),
+					    $self->opts());
 }
 
 sub add_args

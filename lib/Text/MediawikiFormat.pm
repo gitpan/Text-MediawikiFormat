@@ -1,6 +1,49 @@
 package Text::MediawikiFormat;
 
+use warnings;
 use strict;
+
+=head1 NAME
+
+Text::MediawikiFormat - Translate Wiki markup into other text formats
+
+=head1 VERSION
+
+Version 0.02
+
+=cut
+
+# What version of Perl made `our' available?
+use vars qw{$VERSION};
+$VERSION = '0.02';
+
+=head1 SYNOPSIS
+
+	use Text::MediawikiFormat;
+	my $html = wikiformat ($raw);
+	my $text = wikiformat ($raw, {}, {implicit_links => 1});
+
+=head1 DESCRIPTION
+
+L<http://wikipedia.org> and its sister projects use the PHP Mediawiki to format
+their pages.  This module attempts to duplicate the Mediawiki formatting rules.
+Those formatting rules can be simple and easy to use, while providing more
+advanced options for the power user.  They are also easy to translate into
+other, more complicated markup languages with this module.  It creates HTML by
+default, but could produce valid POD, DocBook, XML, or any other format
+imaginable.
+
+The most important function is C<Text::MediawikiFormat::format()>.  It is
+exported as C<wikiformat()> by default, but that function name may be changed.
+
+It should be noted that this module is written as a drop in replacement for
+L<Text::WikiMarkup> that expands on that modules functionality and provides
+a default rule set that may be used to format text like the PHP Mediawiki.  It
+is also well to note early that if you just want a Mediawiki clone (you don't
+need to customize it heavily and you want integration with a back end
+database), you should look at L<Wiki::Toolkit::Formatter::Mediawiki>.
+
+=cut
 
 use Carp qw(carp confess croak);
 use CGI qw(:standard);
@@ -9,72 +52,72 @@ use Text::MediawikiFormat::Blocks;
 use URI;
 use URI::Escape;
 
-our $missing_html_packages;
+use vars qw{%tags %opts $missing_html_packages %merge_matrix};
+
 BEGIN
 {
+    # Try to load optional HTML packages, recording any errors.
     eval {require HTML::Parser};
     $missing_html_packages = $@;
     eval {require HTML::Tagset};
     $missing_html_packages .= $@;
 }
 
-use IO::File;
-our $df = new IO::File (">>/tmp/wikiformat.log");
 
-use vars qw( $VERSION %tags %opts %merge_matrix );
-$VERSION = '0.01'; 
-%tags    = (
-    indent		=> qr/^(?:\t+|\s{4,})/,
-    newline		=> '<br />',
-    link		=> \&make_html_link,
+
+###
+### Defaults
+###
+%tags =
+(
+    indent		=> qr/^(?:[:*#;]*)(?=[:*#;])/,
+    link		=> \&_make_html_link,
     strong		=> sub {"<strong>$_[0]</strong>"},
     emphasized		=> sub {"<em>$_[0]</em>"},
     strong_tag		=> qr/'''(.+?)'''/,
     emphasized_tag	=> qr/''(.+?)''/,
 
-    code		=> ['<pre><code>', "</code></pre>\n", '', "\n"],
-    line		=> ['', "\n", '<hr />',  "\n"],
-    paragraph		=> ['<p>', "</p>\n", '', "<br />\n", 1],
+    code		=> ['<pre>', "</pre>\n", '', "\n"],
+    line		=> ['', '', '<hr />',  "\n"],
+    paragraph		=> ["<p>", "</p>\n", '', "\n", 1],
     paragraph_break	=> ['', '', '', "\n"],
     unordered		=> ["<ul>\n", "</ul>\n", '<li>', "</li>\n"],
-    ordered		=> ["<ol>\n", "</ol>\n", 
-	sub {qq|<li value="$_[2]">|, $_[0], "</li>\n"}],
-    header		=> [ '', "\n",
-	sub
-	{
-	    my $level = length $_[2];
-	    return "<h$level>", format_line($_[3], @_[-2, -1]), "</h$level>\n"
-	},],
+    ordered		=> ["<ol>\n", "</ol>\n", '<li>', "</li>\n"],
+    definition		=> ["<dl>\n", "</dl>\n", \&_dl],
+    header		=> ['', "\n", \&_make_header],
 
-    blocks		=> {
-	ordered			=> qr/^([\dA-Za-z]+)\.\s*/,
-	unordered		=> qr/^\*\s*/,
-	code			=> qr/^(?:\t+|\s{4,})  /,
-	header			=> qr/^(=+) (.+) \1/,
-	paragraph		=> qr/^/,
-	paragraph_break		=> qr/^\s*$/,
-	line			=> qr/^-{4,}/,
+    blocks         =>
+    {
+     code		=> qr/^ /,
+     header		=> qr/^(=+)\s*(.+?)\s*\1$/,
+     line		=> qr/^-{4,}$/,
+     ordered		=> qr/^#\s*/,
+     unordered		=> qr/^\*\s*/,
+     definition		=> qr/^([;:])\s*/,
+     paragraph		=> qr/^/,
+     paragraph_break	=> qr/^\s*$/,
     },
 
-    indented		=> {map {$_ => 1} qw(ordered unordered)},
-    nests		=> {map {$_ => 1} qw(ordered unordered)},
+    indented		=> {map {$_ => 1} qw(ordered unordered definition)},
+    nests		=> {map {$_ => 1} qw(ordered unordered definition)},
     nests_anywhere	=> {map {$_ => 1} qw(nowiki)},
 
-    blockorder		=> [qw(header line ordered unordered code
+    blockorder		=> [qw(code header line ordered unordered definition
 			       paragraph_break paragraph)],
+    implicit_link_delimiters
+			=> qr!\b(?:[A-Z][a-z0-9]\w*){2,}!,
     extended_link_delimiters
-			=> [qw([ ])],
+			=> qr!\[(?:\[[^][]*\]|[^][]*)\]!,
 
     schemas		=> [qw(http https ftp mailto gopher)],
 
-    unformatted_blocks
-		    => [qw(code header nowiki pre)],
+    unformatted_blocks	=> [qw(header nowiki pre)],
 
     allowed_tags	=> [#HTML
 			    qw(b big blockquote br caption center cite code dd
 			       div dl dt em font h1 h2 h3 h4 h5 h6 hr i li ol p
-			       pre rb rp rt ruby s small strike strong sub sup
-			       table td th tr tt u ul var),
+			       pre rb rp rt ruby s samp small strike strong sub
+			       sup table td th tr tt u ul var),
 			       # Mediawiki Specific
 			       qw(nowiki),],
     allowed_attrs	=> [qw(title align lang dir width height bgcolor),
@@ -91,138 +134,162 @@ $VERSION = '0.01';
 			    qw(id class name style), # For CSS
 			   ],
 
-);
-%opts = (
-    implicit_links	=> 1,
+    _toc		=> [],
 );
 
-sub process_args
+%opts =
+(
+    extended       => 1,
+    implicit_links => 0,
+    absolute_links => 0,
+    prefix         => '',
+    process_html   => 1,
+);
+
+# Make sure import's argument hash contains an `as' entry.  `as' defaults to
+# `wikiformat' when none is given.
+sub _process_args
 {
 	shift; # Class
 	return as => shift if @_ == 1;
 	return as => 'wikiformat', @_;
 }
 
-# Everything defaults to undef except implicit_links, which defaults to 1.
-sub default_opts
+# Delete the options (prefix, extended, implicit_links, ...) from a hash,
+# returning a new hash with the deleted options.
+sub _extract_opts
 {
-	return {
-		%opts,
-		map {$_ => delete $_[1]->{$_}}
-		    qw(prefix extended implicit_links absolute_links
-		       process_html debug)
-	       };
+    my %newopts;
+
+    for my $key (qw{prefix extended implicit_links absolute_links
+		    process_html debug})
+    {
+	if (defined (my $val = delete $_[0]->{$key}))
+	{
+	    $newopts{$key} = $val;
+	}
+    }
+
+    return \%newopts;
 }
 
 # Shamelessly ripped from Hash::Merge, which doesn't work in a threaded
 # environment with two threads trying to use different merge matrices.
-%merge_matrix = (
-	SCALAR => {
-                SCALAR => sub { return $_[0] },
-                ARRAY  =>
-			sub { # Need to be able to replace scalar with array
-			      # for extended_link_delimiters (could be array
-			      # or regex).
-			      return $_[0]; },
-                HASH   =>
-			sub { confess "Attempt to replace hash with scalar"
-				if defined $_[0];
-			      return _clone ($_[1]); } },
-        ARRAY => {
-                SCALAR =>
-			sub { # Need to be able to replace array with scalar
-			      # for extended_link_delimiters (could be array
-			      # or regex).
-			      return _clone ($_[0]); },
-                ARRAY  => sub { return _clone ($_[0]); },
-                HASH   =>
-			sub { confess "Attempt to replace hash with array" } },
-        HASH => {
-                SCALAR => sub { confess "Attempt to replace scalar with hash" },
-                ARRAY  => sub { confess "Attempt to replace array with hash" },
-                HASH   => sub { _merge_hashes( $_[0], $_[1] ) } }
+%merge_matrix =
+(
+    SCALAR =>
+    {
+	SCALAR => sub {return $_[0]},
+	ARRAY  => sub {# Need to be able to replace scalar with array
+		       # for extended_link_delimiters (could be array
+		       # or regex).
+		       return $_[0];},
+	HASH   => sub {confess "Attempt to replace hash with scalar"
+			   if defined $_[0];
+		       return _clone ($_[1]);}
+    },
+
+    ARRAY =>
+    {
+	SCALAR => sub {# Need to be able to replace array with scalar
+		       # for extended_link_delimiters (could be array
+		       # or regex).
+		       return _clone ($_[0]);},
+	ARRAY  => sub {return _clone ($_[0]);},
+	HASH   => sub {confess "Attempt to replace hash with array"}
+    },
+
+    HASH =>
+    {
+	SCALAR => sub {confess "Attempt to replace scalar with hash"},
+	ARRAY  => sub {confess "Attempt to replace array with hash"},
+	HASH   => sub {_merge_hash_elements ($_[0], $_[1])}
+    }
 );
 # Return a copy of arrays and a deep copy of hashes.
 sub _clone
 {
-  my ($obj) = @_;
-  my $type;
-  if (!defined $obj) {		# Perl 5.005 compatibility
-    $type = 'SCALAR';
-  } elsif (ref $obj eq 'HASH') { 
-    $type = 'HASH';
-  } elsif (ref $obj eq 'ARRAY') {
-    $type = 'ARRAY';
-  } else {
-    $type = 'SCALAR';
-  }
+    my ($obj) = @_;
+    my $type;
+    if (!defined $obj) {		# Perl 5.005 compatibility
+	$type = 'SCALAR';
+    } elsif (ref $obj eq 'HASH') { 
+	$type = 'HASH';
+    } elsif (ref $obj eq 'ARRAY') {
+	$type = 'ARRAY';
+    } else {
+	$type = 'SCALAR';
+    }
 
-  return $obj if $type eq 'SCALAR';
-  return [@$obj] if $type eq 'ARRAY';
+    return $obj if $type eq 'SCALAR';
+    return [@$obj] if $type eq 'ARRAY';
 
-  my %copy;
-  foreach my $key (keys %$obj)
-  {
-    $copy{$key} = _clone ($obj->{$key});
-  }
-  return \%copy;
+    my %copy;
+    foreach my $key (keys %$obj)
+    {
+	$copy{$key} = _clone ($obj->{$key});
+    }
+    return \%copy;
 }
 # This does a straight merge of hashes, delegating the merge-specific 
-# work to 'merge'.
+# work to '_merge_hashes'.
+sub _merge_hash_elements
+{
+    my ($left, $right) = @_;
+    die "Arguments for _merge_hash_elements must be hash references" unless 
+	UNIVERSAL::isa ($left, 'HASH') && UNIVERSAL::isa ($right, 'HASH');
+
+    my %newhash;
+    foreach my $leftkey (keys %$left)
+    {
+	if (exists $right->{$leftkey})
+	{
+	    $newhash{$leftkey} = 
+		_merge_hashes ($left->{$leftkey}, $right->{$leftkey});
+	}
+	else
+	{
+	    $newhash{$leftkey} = _clone ($left->{$leftkey});
+	}
+    }
+    foreach my $rightkey (keys %$right)
+    { 
+	$newhash{$rightkey} = _clone ($right->{$rightkey})
+	    if !exists $left->{$rightkey};
+    }
+    return \%newhash;
+}
 sub _merge_hashes
 {
-  my ( $left, $right ) = ( shift, shift );
-  die "Arguments for _merge_hashes must be hash references" unless 
-    UNIVERSAL::isa( $left, 'HASH' ) && UNIVERSAL::isa( $right, 'HASH' );
+    my ($left, $right) = @_;
   
-  my %newhash;
-  foreach my $leftkey ( keys %$left ) {
-    if ( exists $right->{ $leftkey } ) {
-      $newhash{ $leftkey } = 
-	merge_hash ($left->{ $leftkey }, $right->{ $leftkey });
+    # if one argument or the other is undefined or empty, don't worry about
+    # copying, just return the original.
+    return $right unless defined $left;
+    return $left unless defined $right;
+
+    # For the general use of this function, we want to create duplicates
+    # of all data that is merged.
+  
+    my ($lefttype, $righttype);
+    if (ref $left eq 'HASH') { 
+	$lefttype = 'HASH';
+    } elsif (ref $left eq 'ARRAY') {
+	$lefttype = 'ARRAY';
     } else {
-      $newhash{ $leftkey } = _clone ($left->{ $leftkey });
+	$lefttype = 'SCALAR';
     }
-  }
-  foreach my $rightkey ( keys %$right ) { 
-    $newhash{ $rightkey } = _clone ($right->{ $rightkey })
-      if !exists $left->{ $rightkey };
-  }
-  return \%newhash;
-}
-sub merge_hash
-{
-  my ( $left, $right ) = ( shift, shift );
   
-  # For the general use of this module, we want to create duplicates
-  # of all data that is merged.  This behavior can be shut off, but 
-  # can mess havoc if references are used heavily.
+    if (ref $right eq 'HASH') { 
+	$righttype = 'HASH';
+    } elsif (ref $right eq 'ARRAY') {
+	$righttype = 'ARRAY';
+    } else {
+	$righttype = 'SCALAR';
+    }
   
-  my ($lefttype, $righttype);
-  if (!defined $left) {		# Perl 5.005 compatibility
-    $lefttype = 'SCALAR';
-  } elsif (ref $left eq 'HASH') { 
-    $lefttype = 'HASH';
-  } elsif (ref $left eq 'ARRAY') {
-    $lefttype = 'ARRAY';
-  } else {
-    $lefttype = 'SCALAR';
-  }
-  
-  if (!defined $right) {		# Perl 5.005 compatibility
-    $righttype = 'SCALAR';
-  } elsif (ref $right eq 'HASH') { 
-    $righttype = 'HASH';
-  } elsif (ref $right eq 'ARRAY') {
-    $righttype = 'ARRAY';
-  } else {
-    $righttype = 'SCALAR';
-  }
-  
-  return $merge_matrix{$lefttype}->{$righttype} ($left, $right);
+    return $merge_matrix{$lefttype}->{$righttype} ($left, $right);
 }	
-
-
 
 sub _require_html_packages
 {
@@ -236,17 +303,17 @@ sub import
     return unless @_ > 1;
 
     my $class   = shift;
-    my %args    = $class->process_args( @_ );
+    my %args    = $class->_process_args (@_);
     my $name    = delete $args{as};
 
     my $caller  = caller();
-    my $iopts = $class->default_opts (\%args);
-    my $itags = merge_hash (\%args, \%tags);
+    my $iopts = _merge_hashes _extract_opts (\%args), \%opts;
+    my $itags = _merge_hashes \%args, \%tags;
 
     _require_html_packages
 	if $iopts->{process_html};
 
-    # Could verify ITAGS here via check_blocks, but what if a user
+    # Could verify ITAGS here via _check_blocks, but what if a user
     # wants to add a block to block_order that they intend to override
     # the implementation of with every call to format()?
 
@@ -257,9 +324,231 @@ sub import
     }
 }
 
+
+
+=head1 FUNCTIONS
+
+=head2 format
+
+C<format()> takes one required argument, the text to convert, and returns the
+converted text.  It allows two optional arguments.  The first is a reference to
+a hash of tags used to override the functions default behavior.  Anything
+passed in here will override the default tags.  The second argument is a hash
+reference of options.  The options are currently:
+
+=over 4
+
+=item prefix
+
+The prefix of any links to wiki pages.  In HTML mode, this is the path to the
+Wiki.  The actual linked item itself will be appended to the prefix.  This is
+useful to create full URIs:
+
+	{prefix => 'http://example.com/wiki.pl?page='}
+
+=item extended
+
+A boolean flag, true by default, to let square brackets mark links.
+An optional title may occur after the Wiki targets, preceded by an open pipe.
+URI titles are separated from their title with a space.  These are valid
+extended links:
+
+	[[A wiki page|and the title to display]]
+	[http://ximbiot.com URI title]
+
+Where the linking semantics of the destination format allow it, the result will
+display the title instead of the URI.  In HTML terms, the title is the content
+of an C<A> element (not the content of its C<HREF> attribute).
+
+You can use delimiters other than single square brackets for marking extended
+links by passing a value for C<extended_link_delimiters> in the C<%tags> hash
+when calling C<format>.
+
+Note that if you disable this flag, you should probably enable
+C<implicit_links> or there will be no automated way to link to other pages in
+your wiki.
+
+=item implicit_links
+
+A boolean flag, false by default, to create links from StudlyCapsStrings.
+
+=item absolute_links
+
+A boolean flag, true by default, which treats any links that are absolute URIs
+(such as C<http://www.cpan.org/>) specially.  Any prefix will not apply.
+This should maybe be called implicit_absolute_links since the C<extended>
+option enables absolute links inside square brackets by default.
+
+A link is any text that starts with a known schema followed by a colon and one
+or more non-whitespace characters.  This is a distinct subset of what L<URI>
+recognizes as a URI, but is a good first-order approximation.  If you need to
+recognize more complex URIs, use the standard wiki formatting explained
+earlier.
+
+The recognized schemas are those defined in the C<schema> value in the C<%tags>
+hash.  C<schema> defaults to C<http>, C<https>, C<ftp>, C<mailto>, and
+C<gopher>.
+
+=item process_html
+
+This flag, true by default, causes the formatter to ignore block level wiki
+markup (code, ordered, unordered, etc...) when they occur on lines which also
+contain allowed block-level HTML tags (<pre>, <ol>, <ul>, </pre>, etc...).
+Phrase level wiki markup (emphasis, strong, & links) is unaffected by this
+flag.
+
+=back
+
+=cut
+
 sub format
 {
     _format (\%tags, \%opts, @_);
+}
+
+# Turn the contents after a ; or : into a dictionary list.
+# Using : without ; just looks like an indent.
+sub _dl
+{
+    #my ($line, $indent, $lead) = @_;
+    my ($term, $def);
+
+    if ($_[2] eq ';')
+    {
+	if ($_[0] =~ /^(.*?)\s+:\s+(.*)$/)
+	{
+	    $term = $1;
+	    $def = $2;
+	}
+    }
+    else
+    {
+	*def = \$_[0];
+    }
+
+    my $retval;
+    $retval = "<dt>$term</dt>\n" if defined $term;
+    $retval .= "<dd>$def</dd>\n" if defined $def;
+}
+
+# Makes a regex out of the allowed schema array.
+sub _make_schema_regex
+{
+    my $re = join "|", map {qr/\Q$_\E/} @_;
+    return qr/(?:$re)/;
+}
+
+# Turn [[Wiki Link|Title]], [URI Title], scheme:url, or StudlyCaps into links.
+sub _make_html_link
+{
+    my ($tag, $opts, $tags) = @_;
+
+    my $class = '';
+    my ($href, $title);
+    if ($tag =~ /^\[\[([^|#]*)(?:(#)([^|]*))?(?:(\|)(.*))?\]\]$/)
+    {
+	# Wiki link
+	$href = $opts->{prefix} . uri_escape $1 if $1;
+	$href .= $2 . uri_escape $3 if $2;
+
+	if ($4)
+	{
+	    # Title specified explicitly.
+	    if (length $5)
+	    {
+		$title = $5;
+	    }
+	    else
+	    {
+		# An empty title asks Mediawiki to strip any parens off the end
+		# of the node name.
+		$1 =~ /^([^(]*)(?:\s*\()?/;
+		$title = $1;
+	    }
+	}
+	else
+	{
+	    # Title defaults to the node name.
+	    $title = $1;
+	}
+    }
+    elsif ($tag =~ /^\[(\S*)(?:(\s+)(.*))?\]$/)
+    {
+	# URI
+	$href = $1;
+	if ($2)
+	{
+	    $title = $3;
+	}
+	else
+	{
+	    $title = ++$opts->{_uri_refs};
+	}
+	$href =~ s/'/%27/g;
+    }
+    else
+    {
+	# Shouldn't be able to get here without either $opts->{absolute_links}
+	# or $opts->{implicit_links};
+	$tags->{_schema_regex} ||= _make_schema_regex @{$tags->{schemas}};
+	my $s = $tags->{_schema_regex};
+
+	if ($tag =~ /^($s:\S+)$/)
+	{
+	    # absolute link
+	    $href = $1;
+	    $title = $1;
+	}
+	else
+	{
+	    # StudlyCaps
+	    $href = $opts->{prefix} . uri_escape $tag;
+	    $title = $tag;
+	}
+    }
+
+    return "<a$class href='$href'>$title</a>";
+}
+
+# Store a TOC line for later.
+#
+# ASSUMPTIONS
+#   $level >= 1
+sub _store_toc_line
+{
+    my ($toc, $level, $title, $name) = @_;
+
+    # TODO: Strip formatting from $title.
+
+    if (@$toc && $level > $toc->[-1]->{level})
+    {
+	# Nest a sublevel.
+	$toc->[-1]->{sublevel} = []
+	    unless exists $toc->[-1]->{sublevel};
+	_store_toc_line ($toc->[-1]->{sublevel}, $level, $title, $name);
+    }
+    else
+    {
+	push @$toc, {level => $level, title => $title, name => $name};
+    }
+
+    return $level;
+}
+
+# Make header text, storing the line for the TOC.
+#
+# ASSUMPTIONS
+#   $tags->{_toc} has been initialized to an array ref.
+sub _make_header
+{
+    my $level = length $_[2];
+    my $n = uri_escape $_[3];
+
+    _store_toc_line ($_[-2]->{_toc}, $level, $_[3], $n);
+
+    return "<a name='$n'></a><h$level>",
+	   Text::MediawikiFormat::format_line ($_[3], @_[-2, -1]),
+	   "</h$level>\n";
 }
 
 sub _format
@@ -268,34 +557,33 @@ sub _format
 
 	# Overwriting the caller's hashes locally after merging its contents
 	# is okay.
-	$tags = merge_hash ($tags || {}, $itags);
-	$opts = merge_hash ($opts || {}, $iopts);
+	$tags = _merge_hashes ($tags || {}, $itags);
+	$opts = _merge_hashes ($opts || {}, $iopts);
 
 	_require_html_packages
 	    if $iopts->{process_html};
 
 	# Always verify the blocks since the user may have slagged the
 	# default hash on import.
-	check_blocks( $tags );
+	_check_blocks ($tags);
 
-	my @blocks =  find_blocks( $text,     $tags, $opts );
-	@blocks    =  nest_blocks( \@blocks                 );
-	return     process_blocks( \@blocks,  $tags, $opts );
+	my @blocks = _find_blocks ($text, $tags, $opts);
+	@blocks = _nest_blocks (\@blocks);
+	return _process_blocks (\@blocks, $tags, $opts);
 }
 
-sub check_blocks
+sub _check_blocks
 {
     my $tags = shift;
     my %blocks = %{$tags->{blocks}};
     delete @blocks{@{$tags->{blockorder}}};
 
-    carp "No order specified for blocks '"
+    carp
+	 "No order specified for blocks: "
 	 . join (', ', keys %blocks)
-	 . "'\n"
+	 . ".\n"
 	if keys %blocks;
 }
-
-
 
 # This sub recognizes three states:
 #
@@ -318,9 +606,6 @@ sub _append_processed_line
 
     $state ||= '';
 
-    print $df "_append_processed_line ($state, ", $text, ")\n"
-	if $parser->{opts}->{debug};
-
     my @newlines = split /(?<=\n)/, $text;
     if (@$lines && $lines->[-1]->[1] !~ /\n$/
 	&& # State not changing from or to 'nowiki'
@@ -329,19 +614,15 @@ sub _append_processed_line
     {
 	$lines->[-1]->[1] .= shift @newlines;
 	$lines->[-1]->[0] = $state if $state eq 'html';
-	print $df "_append_processed_line: ", $lines->[-1]->[1]
-	    if $parser->{opts}->{debug};
     }
 
     foreach my $line (@newlines)
     {
 	$lines->[-1]->[2] = '1' if @$lines;
 	push @$lines, [$state, $line];
-	print $df "_append_processed_line: ", $line
-	    if $parser->{opts}->{debug};
     }
     $lines->[-1]->[2] = '1'
-	    if @$lines && $lines->[-1]->[1] =~ /\n$/;
+	if @$lines && $lines->[-1]->[1] =~ /\n$/;
 }
 
 sub _html_tag
@@ -516,11 +797,18 @@ sub _html_text
 	}
 	elsif ($is_cdata && $HTML::Tagset::isCDATA_Parent{$tagstack->[-1]})
 	{
+	    # If the user hadn't specifically allowed a tag which contains
+	    # CDATA, then it won't be on the tag stack.
 	    $newtext = $dtext;
 	}
     }
 
-    $newtext = CGI::escapeHTML $dtext unless defined $newtext;
+    unless (defined $newtext)
+    {
+	$newtext = CGI::escapeHTML $dtext unless defined $newtext;
+	# CGI::escapeHTML escapes single quotes for some reason.
+	$newtext =~ s/&#39;/'/g;
+    }
 
     _append_processed_line $parser, $newtext, $newstate;
 }
@@ -561,12 +849,12 @@ sub _find_blocks_in_html
 	    my $block;
 	    if ($type)
 	    {
-		$block = start_block ($dtext, $tags, $opts, $type);
+		$block = _start_block ($dtext, $tags, $opts, $type);
 	    }
 	    else
 	    {
 		chomp $dtext;
-		$block = start_block ($dtext, $tags, $opts);
+		$block = _start_block ($dtext, $tags, $opts);
 	    }
 	    push @blocks, $block if $block;
 	}
@@ -575,38 +863,33 @@ sub _find_blocks_in_html
     return @blocks;
 }
 
-
-
-sub find_blocks
+sub _find_blocks
 {
-	my ($text, $tags, $opts) = @_;
-	my @blocks;
+    my ($text, $tags, $opts) = @_;
+    my @blocks;
 
-	if ($opts->{process_html})
+    if ($opts->{process_html})
+    {
+	@blocks = _find_blocks_in_html $text, $tags, $opts;
+    }
+    else
+    {
+	# The original behavior.
+	for my $line ( split(/\r?\n/, $text) )
 	{
-		@blocks = _find_blocks_in_html ($text, $tags, $opts);
+	    my $block = _start_block ($line, $tags, $opts);
+	    push @blocks, $block if $block;
 	}
-	else
-	{
-		# The original behavior.
-		for my $line ( split(/\r?\n/, $text) )
-		{
-			my $block = start_block( $line, $tags, $opts );
-			push @blocks, $block if $block;
-		}
-	}
+    }
 
-	return @blocks;
+    return @blocks;
 }
 
-sub start_block
+sub _start_block
 {
     my ($text, $tags, $opts, $type) = @_;
 
-    print $df "start_block (", join (":", @_), ")\n"
-	if $opts->{debug};
-
-    return new_block('end', level => 0) unless $text;
+    return new_block ('end', level => 0) unless $text;
     return new_block ($type,
 		      level => 0,
 		      opts  => $opts,
@@ -618,15 +901,9 @@ sub start_block
     {
 	my ($line, $level, $indentation)  = ($text, 0, '');
 
-	if ($tags->{indented}{$block})
-	{
-	    ($level, $line, $indentation) = get_indentation ($tags, $line);
-	    next unless $level;
-	}
+	($level, $line, $indentation) = _get_indentation ($tags, $line)
+	    if $tags->{indented}{$block};
 
-	print $df "testing `$line' as $block (", $tags->{blocks}{$block},
-		  ")\n"
-	    if $opts->{debug};
 	my $marker_removed = length ($line =~ s/$tags->{blocks}{$block}//);
 
 	next unless $marker_removed;
@@ -642,7 +919,7 @@ sub start_block
     }
 }
 
-sub nest_blocks
+sub _nest_blocks
 {
     my $blocks    = shift;
     return unless @$blocks;
@@ -657,27 +934,24 @@ sub nest_blocks
     return @processed;
 }
 
-sub process_blocks
+sub _process_blocks
 {
-	my ($blocks, $tags, $opts) = @_;
+    my ($blocks, $tags, $opts) = @_;
 
-	my @open;
-	for my $block (@$blocks)
-	{
-		push @open, process_block( $block, $tags, $opts )
-			unless $block->type() eq 'end';
-	}
+    my @open;
+    for my $block (@$blocks)
+    {
+	push @open, _process_block ($block, $tags, $opts)
+	    unless $block->type() eq 'end';
+    }
 
-	return join('', @open);
+    return join '', @open ;
 }
 
-sub process_block
+sub _process_block
 {
     my ($block, $tags, $opts) = @_;
     my $type = $block->type();
-
-    print $df "process_block ($type)\n"
-	if $opts->{debug};
 
     my ($start, $end, $start_line, $end_line, $between);
     if ($tags->{$type})
@@ -696,12 +970,8 @@ sub process_block
     {
 	if (blessed $line)
 	{
-		print "process_block: nested, diving\n"
-			if $opts->{debug};
 		my $prev_end = pop @text || ();
-		push @text, process_block ($line, $tags, $opts), $prev_end;
-		print "process_block: back\n"
-			if $opts->{debug};
+		push @text, _process_block ($line, $tags, $opts), $prev_end;
 		next;
 	}
 
@@ -720,248 +990,140 @@ sub process_block
     }
 
     pop @text if $between;
-    print $df "process_block: returning:",
-	      join (":", $start||'', @text, $end||''), "\n"
-	    if $opts->{debug};
-    return join('', $start, @text, $end);
+    return join '', $start, @text, $end;
 }
 
-sub get_indentation
+sub _get_indentation
 {
 	my ($tags, $text) = @_;
 
-	return 0, $text unless $text =~ s/($tags->{indent})//;
-	return( length( $1 ) + 1, $text, $1 );
+	return 1, $text unless $text =~ s/($tags->{indent})//;
+	return length ($1) + 1, $text, $1;
 }
+
+=head2 format_line
+
+	$formatted = format_line ($raw, $tags, $opts);
+
+This function is never exported.  It formats the phrase elements of a single
+line of text (emphasised, strong, and links).
+
+This is only meant to be called from L<Text::MediawikiFormat::Block> and so
+requires $tags and $opts to have all elements filled in.  If you find a use for
+it, please let me know and maybe I will have it default the missing elements as
+C<format()> does.
+
+=cut
 
 sub format_line
 {
 	my ($text, $tags, $opts) = @_;
-	$opts ||= {};
 
 	$text =~ s!$tags->{strong_tag}!$tags->{strong}->($1, $opts)!eg;
 	$text =~ s!$tags->{emphasized_tag}!$tags->{emphasized}->($1, $opts)!eg;
 
-	$text = find_extended_links( $text, $tags, $opts ) if $opts->{extended};
-
-	$text =~ s|(?<!["/>=])\b((?:[A-Z][a-z0-9]\w*){2,})|
-			  $tags->{link}->($1, $opts)|egx
-			if !defined $opts->{implicit_links} or $opts->{implicit_links};
+	$text = _find_links ($text, $tags, $opts)
+	    if $opts->{extended}
+	       || $opts->{absolute_links}
+	       || $opts->{implicit_links};
 
 	return $text;
 }
 
-sub find_innermost_balanced_pair
+sub _find_innermost_balanced_pair
 {
-	my ($text, $open, $close) = @_;
+    my ($text, $open, $close) = @_;
 
-	my $start_pos             = rindex( $text, $open              );
-	return if $start_pos == -1;
+    my $start_pos = rindex $text, $open;
+    return if $start_pos == -1;
 
-	my $end_pos               =  index( $text, $close, $start_pos );
-	return if $end_pos   == -1;
+    my $end_pos = index $text, $close, $start_pos;
+    return if $end_pos == -1;
 
-	my $open_length           = length( $open );
-	my $close_length          = length( $close );
-	my $close_pos             = $end_pos + $close_length;
-	my $enclosed_length       = $close_pos - $start_pos;
+    my $open_length = length $open;
+    my $close_length = length $close;
+    my $close_pos = $end_pos + $close_length;
+    my $enclosed_length = $close_pos - $start_pos;
 
-	my $enclosed_atom        = substr( $text, $start_pos, $enclosed_length );
-	return substr( $enclosed_atom, $open_length, 0 - $close_length ),
-	       substr( $text, 0, $start_pos ),
-		   substr( $text, $close_pos );
+    my $enclosed_atom = substr $text, $start_pos, $enclosed_length;
+    return substr ($enclosed_atom, $open_length, 0 - $close_length),
+	   substr ($text, 0, $start_pos),
+	   substr ($text, $close_pos);
 }
 
-sub find_extended_links
+sub _find_links
 {
-	my ($text, $tags, $opts) = @_;
+    my ($text, $tags, $opts) = @_;
 
-    my $schemas = join('|', @{$tags->{schemas}});
-    $text =~ s!(\s+)(($schemas):\S+)!$1 . $tags->{link}->($2, $opts)!egi
-	    if $opts->{absolute_links};
+    my $s;
+    if ($opts->{absolute_links})
+    {
+	$tags->{_schema_regex} ||= _make_schema_regex @{$tags->{schemas}};
+	$s = $tags->{_schema_regex};
+    }
 
     if (ref $tags->{extended_link_delimiters} eq "ARRAY")
     {
+	# Backwards compatibility for absolute links
+	$text =~ s!(?<=\s)$s:\S+!$tags->{link}->($&, $opts, $tags)!egi
+	    if $opts->{absolute_links};
+
 	my ($start, $end) = @{$tags->{extended_link_delimiters}};
-	while (my @pieces = find_innermost_balanced_pair ($text, $start, $end))
+	while (my @pieces = _find_innermost_balanced_pair ($text, $start, $end))
 	{
 	    my ($tag, $before, $after) = map { defined $_ ? $_ : '' } @pieces;
 	    my $extended               = $tags->{link}->( $tag, $opts, $tags )
 					 || '';
 	    $text                      = $before . $extended . $after;
 	}
+
+	# Backwards compatibility for implicit links
+	$text =~ s|(?<!["/>=])\b(?:[A-Z][a-z0-9]\w*){2,}|
+		   $tags->{link}->($&, $opts, $tags)|eg
+	    if $opts->{implicit_links};
     }
     else
     {
-	# Regexp
-	$text =~ s/$tags->{extended_link_delimiters}/$tags->{link}->($1, $opts,
-								     $tags)/ge;
+	# Build Regexp
+	my @res;
+	push @res, qr/(?<=\s)$s:\S+/
+	    if $opts->{absolute_links};		# URL
+	push @res, qr/$tags->{extended_link_delimiters}/
+	    if $opts->{extended};		# [[Wiki Page]]
+	push @res, qr/$tags->{implicit_link_delimiters}/
+	    if $opts->{implicit_links};		# StudlyCaps
+
+	my $re = join "|", @res;
+	$text =~ s/$re/$tags->{link}->($&, $opts, $tags)/ge;
     }
 
     return $text;
 }
 
-sub make_html_link
-{
-	my ($link, $opts)        = @_;
-	$opts                  ||= {};
+=head1 Wiki Format
 
-	($link, my $title)       = find_link_title( $link, $opts );
-	($link, my $is_relative) = escape_link( $link, $opts );
+Refer to L<http://en.wikipedia.org/wiki/Help:Contents/Editing_Wikipedia> for
+description of the default wiki format, as interpreted by this module.  Any
+discrepencies will be considered bugs in this module, with a few exceptions.
 
-	my $prefix               = ( defined $opts->{prefix} && $is_relative )
-		? $opts->{prefix} : '';
-
-	return qq|<a href="$prefix$link">$title</a>|;
-}
-
-sub escape_link
-{
-	my ($link, $opts) = @_;
-
-	my $u = URI->new( $link );
-	return $link if $u->scheme();
-
-	# it's a relative link
-	return( uri_escape( $link ), 1 );
-}
-
-sub find_link_title
-{
-	my ($link, $opts)  = @_;
-	my $title;
-
-	($link, $title)    = split(/\|/, $link, 2) if $opts->{extended};
-	$title             = $link unless $title;
-
-	return $link, $title;
-}
-
-'shamelessly adapted from the Jellybean project';
-
-__END__
-
-=head1 NAME
-
-Text::MediawikiFormat - html-aware module for translating Wiki formatted text
-                        into other formats
-
-=head1 SYNOPSIS
-
-	use Text::MediawikiFormat;
-	my $html = Text::MediawikiFormat::format($raw);
-
-=head1 DESCRIPTION
-
-The original Wiki web site had a very simple interface to edit and to add
-pages.  Its formatting rules are simple and easy to use.  They are also easy to
-translate into other, more complicated markup languages with this module.  It
-creates HTML by default, but can produce valid POD, DocBook, XML, or any other
-format imaginable.
-
-The most important function is C<format()>.  It is not exported by default.
-
-=head2 format()
-
-C<format()> takes one required argument, the text to convert, and returns the
-converted text.  It allows two optional arguments.  The first is a reference to
-a hash of tags.  Anything passed in here will override the default tag
-behavior.  The second argument is a hash reference of options.  They are
-currently:
+=head2 Unimplemented Wiki Markup
 
 =over 4
 
-=item * prefix
+=item Templates, Magic Words, and Wanted Links
 
-The prefix of any links.  In HTML mode, this is the path to the Wiki.  The
-actual linked item itself will be appended to the prefix.  This is useful to
-create full URIs:
+Templates, magic words, and the colorization of wanted links all require a back
+end data store that can be consulted on the existance and content of named
+pages.  C<Text::MediawikiFormat> has deliberately been constructed such that it
+operates independantly from such a back end.  For an interface to
+C<Text::MediawikiFormat> which implements these features, see
+L<Wiki::Toolkit::Formatter::Mediawiki>.
 
-	{ prefix => 'http://example.com/wiki.pl?page=' }
+=item Tables
 
-=item * extended
-
-A boolean flag, false by default, to use extended linking semantics.  This
-comes from the Everything Engine (L<http:E<sol>E<sol>everydevel.comE<sol>>),
-which marks links with square brackets.  An optional title may occur after the
-link target, preceded by an open pipe.  These are valid extended links:
-
-	[a valid link]
-	[link|title]
-
-Where the linking semantics of the destination format allow it, the result will
-display the title instead of the URI.  In HTML terms, the title is the content
-of an C<A> element (not the content of its C<HREF> attribute).
-
-You can use delimiters other than single square brackets for marking extended
-links by passing a value for C<extended_link_delimiters> in the C<%tags> hash
-when calling C<format>.
-
-=item * implicit_links
-
-A boolean flag, true by default, to create links from StudlyCapsStringsNote
-that if you disable this flag, you should probably enable the C<extended> one
-also, or there will be no way of creating links in your documents.  To disable
-it, use the pair:
-
-	{ implicit_links => 0 }
-
-=item * absolute_links
-
-A boolean flag, false by default, which treats any links that are absolute URIs
-(such as http://www.cpan.org/) specially. Any prefix will not apply and the
-URIs aren't quoted. Use this in conjunction with the C<extended> option to
-detect the link.
-
-A link is any text that starts with a known schema followed by a colon and one
-or more non-whitespace characters.  This is a distinct subset of what L<URI>
-recognizes as a URI, but is a good first-order approximation.  If you need to
-recognize more complex URIs, use the standard wiki formatting explained
-earlier.
-
-The recognized schemas are those defined in the C<schema> value in the C<%tags>
-hash. The defaults are C<http>, C<https>, C<ftp>, C<mailto>, and C<gopher>.
+This is on the TODO list.
 
 =back
-
-=head2 Wiki Format
-
-Wiki formatting is very simple.  An item wrapped in three single quotes is
-B<strong>.  An item wrapped in two single quotes is I<emphasized>.  Any word
-with multiple CapitalLetters (e. g., StudlyCaps) will become a link.  Four or
-more hyphen characters at the start of a line create a horizontal line.
-Newlines turn into the appropriate tags.  Headers are matching equals signs
-around the header text -- the more signs, the lesser the header.
-
-Lists are indented text, by one tab or four spaces by default.  You may disable
-indentation.  In unordered lists, where each item has its own bullet point,
-each item needs a leading asterisk and space.  Ordered lists consist of items
-marked with combination of one or more alphanumeric characters followed by a
-period and an optional space.  Any indented text without either marking is
-code, handled literally.  You can nest lists.
-
-The following is valid Wiki formatting, with an extended link as marked.
-
-	= my interesting text =
-
-	ANormalLink
-	[let the Sun shine|AnExtendedLink]
-
-	== my interesting lists ==
-
-	    * unordered one
-	    * unordered two
-
-	    1. ordered one
-	    2. ordered two
-			a. nested one
-			b. nested two
-
-	    code one
-	    code two
-
-	The first line of a normal paragraph.
-	The second line of a normal paragraph.  Whee.
 
 =head1 EXPORT
 
@@ -970,201 +1132,225 @@ subroutine that already has default tags and options set up.  This is
 especially handy if you use a prefix:
 
 	use Text::MediawikiFormat prefix => 'http://www.example.com/';
-	wikiformat( 'some text' );
+	wikiformat ('some text');
 
-Tags are interpreted as, well, tags, except for five special keys:
+Tags are interpreted as default members of the $tags hash normally passed to
+C<format>, except for the five options (see above) and the C<as> key, who's
+value is interpreted as an alternate name for the imported function.
 
-=over 4
+To use the C<as> flag to control the name by which your code calls the imported
+function, for example,
 
-=item * C<prefix>, interpreted as a link prefix
-
-=item * C<extended>, interpreted as the extended link flag
-
-=item * C<implicit_links>, interpreted as the flag to control implicit links
-
-=item * C<absolute_links>, interpreted as the flag to control absolute links
-
-=item * C<as>, interpreted as an alias for the imported function
-
-=back
-
-Use the C<as> flag to control the name by which your code calls the imported
-functionFor example,
-
-	use Text::MediawikiFormat as => 'formatTextInWikiStyle';
-	formatTextInWikiStyle( 'some text' );
+	use Text::MediawikiFormat as => 'formatTextWithWikiStyle';
+	formatTextWithWikiStyle ('some text');
 
 You might choose a better name, though.
 
-The calling semantics are effectively the same as those of the format()
+The calling semantics are effectively the same as those of the C<format()>
 function.  Any additional tags or options to the imported function will
 override the defaults.  This code:
 
 	use Text::MediawikiFormat as => 'wf', extended => 0;
-	wf( 'some text', {}, { extended => 1 });
+	wf ('some text', {}, {extended => 1});
 
 enables extended links, though the default is to disable them.
-
-Tony Bowden E<lt>tony@kasei.comE<gt> suggested this feature, but all
-implementation blame rests solely with me.  Kate L Pugh
-(E<lt>kake@earth.liE<gt>) pointed out that it didn't work, with tests.  It
-works now.
 
 =head1 GORY DETAILS
 
 =head2 Tags
 
-There are two types of Wiki markup: line items and blocks.  Blocks include
+There are two types of Wiki markup: phrase markup and blocks.  Blocks include
 lists, which are made up of lines and can also contain other lists.
 
-=head3 Line items
+=head3 Phrase Markup
 
-There are two classes of line items: simple tags, and tags that contain data.
-The simple tags are C<newline> and C<line>.  The module inserts a newline tag
-whenever it encounters a newline character (C<\n>).  It inserts a line tag
-whenever four or more dash characters (C<---->) occur at the start of a line.
-No whitespace is allowed.  These default to the E<lt>brE<gt> and E<lt>hrE<gt>
-HTML tags, respectively.  To override either, simply pass tags such as:
+The are currently three types of wiki phrase markup.  These are the
+strong and emphasized markup and links.  Links may additionally be of three
+subtypes, extended, implicit, or absolute.
 
-	my $html = format($text, { newline => "\n" });
-
-The three line items are more complex, and require subroutine references. This
-category includes the C<strong> and C<emphasized> tags as well as C<link>s.
-The first argument passed to the subref will be the data found in between the
-marks.  The second argument is the $opts hash reference.  The default action
-for a strong tag is equivalent to:
-
-	my $html = format($text, { strong => sub { "<b>$_[0]</b>" } });
-
-As of version 0.70, you can change the regular expressions used to find strong
-and emphasized tags:
+You can change the regular expressions used to find strong and emphasized tags:
 
 	%tags = (
-		strong_tag     => qr/\*(.+?)\*/,
-		emphasized_tag => qr|(?<!<)/(.+?)/|,
+		strong_tag     => qr/\*([^*]+?)\*/,
+		emphasized_tag => qr|/([^/]+?)/|,
 	);
 
-	$wikitext = 'this is *strong*, /emphasized/, and */emphasized strong/*';
-	$htmltext = Text::MediawikiFormat::format( $wikitext, \%tags, {} );
+	$wikitext = 'this is *strong*, /emphasized/, and */em+strong/*';
+	$htmltext = wikiformat ($wikitext, \%tags, {});
 
-Be aware that using forward slashes to mark anything leads to the hairy regular
-expression -- use something else.  B<This interface is experimental> and may
-change if I find something better.  It's nice to be able to override those
-tags, though.
+You can also change the regular expressions used to find links.  The following
+just sets them to their default states (but enables parsing of implicit links,
+which is I<not> the default):
 
-Finally, there are C<extended_link_delimiters>, which allow you to use
-delimiters other than single square brackets for marking extended links.  Pass
-the tags as:
+	my $html = wikiformat
+	(
+	    $raw,
+	    {implicit_link_delimiters => qr!\b(?:[A-Z][a-z0-9]\w*){2,}!,
+	     extended_link_delimiters => qr!\[(?:\[[^][]*\]|[^][]*)\]!,
+	    },
+	    {implicit_links => 1}
+	);
 
-	my $html = format( $text, { extended_link_delimiters => [ '[[', ']]' ] });
+In addition, you may set the function references that format strong and
+emphasized text and links.  The strong and emphasized functions receive only
+the text to be formatted as an argument and are expected to return the
+formatted text.  The link formatter also recieves references to the C<$tags>
+and C<$opts> arrays.  For example, the following sets the strong and
+emphasized formatters to their default state while replacing the link formatter
+with one which strips href information and returns only the title text:
 
-This allows you to use double square brackets as UseMod supports:
-
-	[[an extended link]]
-	[[a titled extended link|title]]
+	my $html = wikiformat
+	(
+	    $raw,
+	    {strong => sub {"<strong>$_[0]</strong>"},
+	     emphasized => sub {"<em>$_[0]</em>"},
+	     link => sub
+	     {
+		 my ($tag, $opts, $tags) = @_;
+		 if ($tag =~ s/^\[\[([^][]+)\]\]$/$1/)
+		 {
+		     my ($page, $title) = split qr/\|/, $tag, 2;
+		     return $title if $title;
+		     return $page;
+		 }
+		 elsif ($tag =~ s/^\[([^][]+)\]$/$1/)
+		 {
+		     my ($href, $title) = split qr/ /, $tag, 2;
+		     return $title if $title;
+		     return $href;
+		 }
+		 else
+		 {
+		     return $tag;
+		 }
+	     },
+	    },
+	);
 
 =head3 Blocks
 
-There are five default block types: C<paragraph>, C<header>, C<code>,
-C<unordered>, and C<ordered>.  The parser usually finds these by indentation,
-either one or more tabs or four or more whitespace characters.  (This does not
-include newlines, however.)  Any line that does not fall in any of these three
-categories is a C<paragraph>.
-
-Code, unordered, and ordered blocks do not I<require> indentation, but the
-parser uses it to control nesting in lists.  Be careful.  To mark a block as
-requiring indentation, use the C<indented> tag, which contains a reference to a
-hash:
-
-	my $html = format($text, { 
-		indented    => { map { $_ => 1 } qw( ordered unordered code )}
-	});
+The default block types are C<code>, C<line>, C<paragraph>, C<paragraph_break>,
+C<unordered>, C<ordered>, C<definition>, and C<header>.
 
 Block entries in the tag hashes must contain array references.  The first two
-items are the tags used at the start and end of the block.  The last items
-contain the tags used at the start and end of each line.  Where there needs to
-be more processing of individual lines, use a subref as the third item.  This
-is how the module numbers ordered lines in HTML lists:
+items are the tags used at the start and end of the block.  The third and
+fourth contain the tags used at the start and end of each line.  Where there
+needs to be more processing of individual lines, use a subref as the third
+item.  This is how the module processes ordered lines in HTML lists and
+headers:
 
-	my $html = format($text, { ordered => [ '<ol>', "</ol>\n",
-		sub { qq|<li value="$_[2]">$_[0]</li>\n| } ] });
+	my $html = wikiformat
+	(
+	    $raw,
+	    {ordered => ['<ol>', "</ol>\n", '<li>', "<li>\n"],
+	     header => ['', "\n", \&_make_header],
+	    },
+	);
 
 The first argument to these subrefs is the post-processed text of the line
 itself.  (Processing removes the indentation and tokens used to mark this as a
 list and checks the rest of the line for other line formattings.)  The second
-argument is the indentation level.  The subsequent arguments are captured
-variables in the regular expression used to find this list type.  The regexp
-for ordered lists is:
+argument is the indentation level (see below).  The subsequent arguments are
+captured variables in the regular expression used to find this list type.  The
+regexp for headers is:
 
-	qr/^([\dA-Za-z]+)\.\s*/;
+	$html = wikiformat
+	(
+	    $raw,
+	    {blocks => {header => qr/^(=+)\s*(.+?)\s*\1$/}}
+	);
 
 The module processes indentation first, if applicable, and stores the
-indentation level (the length of the indentation removed).  The line must
-contain one or more alphanumeric character followed by a single period and
-optional whitespace to be an ordered list item.  The module saves the contents
-of this last group, the value of the list item, and passes it to the subref as
-the third argument.
+indentation level (the length of the indentation removed).
 
 Lists automatically start and end as necessary.
 
-Because of the indentation issue, there is a specific blocks processing in a
-specific order.  The C<blockorder> tag governs this order.  It contains a
-reference to an array of the names of the appropriate blocks to process.  If
-you add a block type, be sure to add an entry for it in C<blockorder>:
+Because regular expressions could conceivably match more than one line, block
+level markup is processed in a specific order.  The C<blockorder> tag governs
+this order.  It contains a reference to an array of the names of the
+appropriate blocks to process.  If you add a block type, be sure to add an
+entry for it in C<blockorder>:
 
-	my $html = format($text, {
-		escaped       => [ '', '', '', '' ],
-		blocks        => {
-			invisible => qr!^--(.*?)--$!,
-		},
-		blockorder    =>
-			[qw( header line ordered unordered code paragraph invisible )],
-	});
+	my $html = wikiformat
+	(
+	    $raw,
+	    {invisible => ['', '', '', ''],
+	     blocks => {invisible => qr!^--(.*?)--$!},
+			blockorder => [qw(code header line ordered
+					  unordered definition invisible
+					  paragraph_break paragraph)]
+		       },
+	    },
+	);
 
 =head3 Finding blocks
 
-Text::MediawikiFormat uses regular expressions to find blocks.  These are in the
-C<%tags> hash under the C<blocks> key.  To change the regular expression to
-find code block items, use:
+As has already been mentioned in passing, C<Text::MediawikiFormat> uses regular
+expressions to find blocks.  These are in the C<%tags> hash under the C<blocks>
+key.  For example, to change the regular expression to find code block items,
+use:
 
-	my $html     =  format($wikitext, {
-		blocks   => { 
-			code => qr/^:\s+/,
-		},
-		indented => {
-			code => 1,
-		},
-	);
+	my $html = wikiformat ($raw, {blocks => {code => qr/^:\s+/}});
 
-This will require indentation and a colon to mark code lines.  A potential
-shortcut is to use the C<indent> tag to match or to change the indentation
-marker.  
-
-B<Note>: if you want to mark a block type as non-indented, you B<cannot> use an
-empty regex such as C<qr//>.  Use a mostly-empty, always-true regex such as
-C<qr/^/> instead.
+This will require a leading colon to mark code lines (note that as writted
+here, this would interfere with the default processing of definition lists).
 
 =head3 Finding Blocks in the Correct Order
 
 As intrepid bug reporter Tom Hukins pointed out in CPAN RT bug #671, the order
-in which Text::MediawikiFormat searches for blocks varies by platform and version of
-Perl.  Because some block-finding regular expressions are more specific than
-others, what you intend to be one type of block may turn into a different list
-type.
+in which C<Text::MediawikiFormat> searches for blocks varies by platform and
+version of Perl.  Because some block-finding regular expressions are more
+specific than others, what you intend to be one type of block may turn into a
+different list type.
 
 If you're adding new block types, be aware of this.  The C<blockorder> entry in
-C<%tags> exists to force Text::MediawikiFormat to apply its regexes from most
-specific to least specific.  It contains an array reference.  By default, it
-looks for ordered lists first, unordered lists second, and code references at
-the end.
+C<%tags> exists to force C<Text::MediawikiFormat> to apply its regexes from
+most specific to least specific.  It contains an array reference.  By default,
+it looks for ordered lists first, unordered lists second, and code references
+at the end.
+
+=head1 SEE ALSO
+
+L<Wiki::Toolkit::Formatter::Mediawiki>
+
+=head1 SUPPORT
+
+You can find documentation for this module with the perldoc command.
+
+    perldoc Text::MediawikiFormat
+
+You can also look for information at:
+
+=over 4
+
+=item * AnnoCPAN: Annotated CPAN documentation
+
+L<http://annocpan.org/dist/Text-MediawikiFormat>
+
+=item * CPAN Ratings
+
+L<http://cpanratings.perl.org/d/Text-MediawikiFormat>
+
+=item * RT: CPAN's request tracker
+
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Text-MediawikiFormat>
+
+=item * Search CPAN
+
+L<http://search.cpan.org/dist/Text-MediawkiFormat>
+
+=back
 
 =head1 AUTHOR
 
-Derek Price C<derek at ximbiot.com> is the current maintainer.  chromatic was
-the original author of L<Text:WikiFormat>.  chromatic's original credits are
-below:
+Derek Price C<derek at ximbiot.com> is the author.
 
-chromatic, C<chromatic@wgz.org>, with much input from the Jellybean team
+=head1 ACKNOWLEDGEMENTS
+
+This module is derived from L<Text::WikiFormat>, written by chromatic.
+chromatic's original credits are below:
+
+chromatic, C<chromatic at wgz.org>, with much input from the Jellybean team
 (including Jonathan Paulett).  Kate L Pugh has also provided several patches,
 many failing tests, and is usually the driving force behind new features and
 releases.  If you think this module is worth buying me a beer, she deserves at
@@ -1190,25 +1376,18 @@ I<Sic transit gloria mundi>.
 
 =over 4
 
-=item * Find a nicer way to mark list as having unformatted lines
-
 =item * Optimize C<format_line()> to work on a list of lines
-
-=item * Handle nested C<strong> and C<emphasized> markings better
 
 =back
 
-=head1 OTHER MODULES
+=head1 COPYRIGHT & LICENSE
 
-Brian "Ingy" Ingerson's L<CGI::Kwiki> has a fairly nice parser.
+ Copyright (c) 2006 Derek R. Price, all rights reserved.
+ Copyright (c) 2002 - 2006, chromatic, all rights reserved.
 
-John McNamara's L<Pod::Simple::Wiki> looks like a good project.
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
 
-Matt Sergeant keeps threatening to write a nice SAX-throwing Wiki formatter.
+=cut
 
-=head1 COPYRIGHT
-
-Copyright (c) 2006 Derek R. Price.  All rights reserved.
-Copyright (c) 2002 - 2006, chromatic.  All rights reserved.
-
-This module is distributed under the same terms as Perl itself.
+1; # End of Text::MediaiwkiFormat

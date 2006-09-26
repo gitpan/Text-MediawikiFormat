@@ -15,36 +15,36 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 de99730c9cff5401331cc9b10da8fffc2607119e ARTISTIC
-SHA1 e9190710b4e5f26234f1c6a7e8ee63e7258b9cd9 Build.PL
-SHA1 d9412194a654d188f07258c624b018f1b3d323b7 Changes
+SHA1 5afa62d27ffff890a5241895ec108ebc0494e007 Build.PL
+SHA1 93333f96e91c1cbb39298c7371dd32a533537130 Changes
 SHA1 2d29c273fda30310211bbf6a24127d589be09b6c GPL
 SHA1 eccb0808083e42742ab218aade252010ec49a567 MANIFEST
-SHA1 59d4ee864f6a7a7675ed36843c187e4d6956b12f META.yml
+SHA1 f61d975c6faaf2b3c4b266b36851b6747a6db5c3 META.yml
 SHA1 3080913f922df68c38ddb4224c5b5b26648a321e Makefile.PL
 SHA1 32770eb383f51fec27a092d2c39f0b1c302df6e6 README
-SHA1 f9e7d682f3bef9bceb059d95fd603118207fb214 lib/Text/MediawikiFormat.pm
-SHA1 24d45e80514ea69de6ed21605464220d11815b7d lib/Text/MediawikiFormat/Blocks.pm
-SHA1 b16de59f74218b04775c00dd9e0272d36d966049 t/Wiki.t
-SHA1 7f5723b91a2577f68e7dc7927ad06da9a25f3dcb t/absolute_links.t
-SHA1 4855794862738bdebb158da3a5576d6056955f6c t/base.t
-SHA1 96cd691c10e95fe1f205d54ccb2c0c0da516e430 t/bugs.t
+SHA1 ca278e3009250cd31fba80033c06ee31a080c5e4 lib/Text/MediawikiFormat.pm
+SHA1 37cbafb6a1c89ab64d2da3ab0144473149c22e67 lib/Text/MediawikiFormat/Blocks.pm
+SHA1 262989c7e29e390c4892a4900c1ee06d7a428a63 t/Wiki.t
+SHA1 4b38e717ffe8bc880b0747f2b85fe8720aa55fa6 t/absolute_links.t
+SHA1 b04c0e9ae00bfb066d146e2e1d4409d8283ed929 t/base.t
+SHA1 aeb5c4bdc543ada1bba29386fbdd0c90c01ef472 t/bugs.t
 SHA1 e7fbd29bd994639e82a480ca7668208c84faf780 t/developer/0-signature.t
-SHA1 5fb91e6463480ee46f05ed0dc6047140ab1705f6 t/developer/pod-coverage.t
+SHA1 9f8e6742d15fc02f70fea8c7883e534b5ab0027e t/developer/pod-coverage.t
 SHA1 0190346d7072d458c8a10a45c19f86db641dcc48 t/developer/pod.t
-SHA1 2f3afb985e73ae34e914689a83bacc551aa553f7 t/embedded-links.t
-SHA1 dd46a9af1e8f9da6d8483f7c255c9134d2ccf411 t/explicit.t
-SHA1 6184ba6a093d6c3c17974f7e91e91936e84ea066 t/implicit.t
-SHA1 61131538e13d602a701b5b223709c1490d94e33e t/kake.t
-SHA1 0003ca1325615ba0f56440a3c95cf8ca16f9247b t/lists-nested.t
-SHA1 516fe29474c7cf8ab34c9b687f2d85eb1368ee65 t/lists-no-indent.t
-SHA1 731bafe5cb99d37b24ac0fd23225c05c4c90ff12 t/lists.t
-SHA1 9889230bf09a5f33414d7b3033808d38c4763f1b t/merge-hash.t
-SHA1 a7af83a0db0acb989e764e2f65919f5eecbb2ff8 t/tag-override-use-as.t
-SHA1 8f21062d694e569d9d8e674b3be9d3ab9c75c800 t/tag-override.t
+SHA1 c566721546586769105f46f73a77bf730939d259 t/embedded-links.t
+SHA1 cdd0b0d3a1ec538468338692f1bf6c38571f8af8 t/explicit.t
+SHA1 337d53b2dedc0583aa33dc722c6eb1797aa3bd27 t/implicit.t
+SHA1 ae832a2139c86b501f9a071393b7434d60a63047 t/kake.t
+SHA1 8e6292aec26edd04a364f9250e8cef09b76cd0cb t/lists-nested.t
+SHA1 4fc52712c3c4e928cf71f4713fdcddb7eadf52bb t/lists-no-indent.t
+SHA1 998488b3e8179e291d75782f0fb4ce697d29b7e1 t/lists.t
+SHA1 215c991a6720a20072cd3b7f4c6aa5241855aee0 t/merge-hash.t
+SHA1 b9163246df082a7b91844c94a8830bc8344b92a0 t/tag-override-use-as.t
+SHA1 99b36df397afa1d042dbc0efde8e28eb1202b594 t/tag-override.t
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.2.2 (GNU/Linux)
 
-iD8DBQFFEV8sLD1OTBfyMaQRAjfhAKC19PZHOH8B0zMP5RDmuWjhokJCAACgwIia
-unamq8TWVbKc8tvgwKZmfws=
-=WaRk
+iD8DBQFFGZTILD1OTBfyMaQRAiuBAJ9JBs1HRx8sYUKfu/O3rVawEgRL4QCg1yxL
+XbJ8tB+3UiYgKzV9vZwSGlg=
+=cIIn
 -----END PGP SIGNATURE-----

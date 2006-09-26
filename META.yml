@@ -1,20 +1,12 @@
 ---
 name: Text-MediawikiFormat
 version: !!perl/hash:Module::Build::Version
-  original: 0.01
+  original: 0.02
   version:
     - 0
-    - 10
-author:
-  - |-
-    chromatic, C<chromatic@wgz.org>, with much input from the Jellybean team
-    (including Jonathan Paulett).  Kate L Pugh has also provided several patches,
-    many failing tests, and is usually the driving force behind new features and
-    releases.  If you think this module is worth buying me a beer, she deserves at
-    least half of it.
-abstract: |-
-  html-aware module for translating Wiki formatted text
-                          into other formats
+    - 20
+author: []
+abstract: Translate Wiki markup into other text formats
 license: perl
 resources:
   license: http://dev.perl.org/licenses/
@@ -26,7 +18,7 @@ build_requires:
 provides:
   Text::MediawikiFormat:
     file: lib/Text/MediawikiFormat.pm
-    version: 0.01
+    version: 0.02
   Text::MediawikiFormat::Block:
     file: lib/Text/MediawikiFormat/Blocks.pm
   Text::MediawikiFormat::Blocks:

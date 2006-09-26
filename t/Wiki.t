@@ -17,7 +17,7 @@ local *Text::MediawikiFormat::getCurrentStatic;
 
 use Test::More tests => 32;
 
-use_ok( 'Text::MediawikiFormat' );
+use_ok 'Text::MediawikiFormat';
 
 my $wikitext =<<WIKI;
 '''hello'''
@@ -26,82 +26,86 @@ my $wikitext =<<WIKI;
 woo
 -----
 LinkMeSomewhere
-[LinkMeElsewhere|BYE]
+[[LinkMeElsewhere|BYE]]
 
-	* unordered one
-	* unordered two
+* unordered one
+* unordered two
 
-	1. ordered one
-	2. ordered two
+# ordered one
+# ordered two
 
-	code one
-	code two
+ code one
+ code two
 
 WIKI
 
-ok( %Text::MediawikiFormat::tags, 
-	'%tags should be available from Text::MediawikiFormat');
+ok %Text::MediawikiFormat::tags, 
+   '%tags should be available from Text::MediawikiFormat';
 
 my %tags = %Text::MediawikiFormat::tags;
 my %opts = ( 
 	prefix => 'rootdir/wiki.pl?page=',
+	implicit_links => 1,
+	extended => 0,
 );
 
-my $htmltext = Text::MediawikiFormat::format_line($wikitext, \%tags, \%opts);
+my $htmltext = Text::MediawikiFormat::format_line ($wikitext, \%tags, \%opts);
 
-like( $htmltext, qr!\[<a href="rootdir/wiki\.pl\?page=LinkMeElsewhere">!, 
-	'format_line () should link StudlyCaps where found)' );
-like( $htmltext, qr!<strong>hello</strong>!, 'three ticks should mark strong');
-like( $htmltext, qr!<em>hi</em>!, 'two ticks should mark emphasized' );
-like( $htmltext, qr!LinkMeSomewhere</a>\n!m, 'should catch StudlyCaps' );
-like( $htmltext, qr!\[!, 'should not handle extended links without flag' );
+like $htmltext, qr!\[<a href='rootdir/wiki\.pl\?page=LinkMeElsewhere'>!, 
+     'format_line () should link StudlyCaps where found)';
+like $htmltext, qr!<strong>hello</strong>!, 'three ticks should mark strong';
+like $htmltext, qr!<em>hi</em>!, 'two ticks should mark emphasized';
+like $htmltext, qr!LinkMeSomewhere</a>\n!m, 'should catch StudlyCaps';
+like $htmltext, qr!\[\[!, 'should not handle extended links without flag';
 
 $opts{extended} = 1;
-$htmltext = Text::MediawikiFormat::format_line($wikitext, \%tags, \%opts);
-like( $htmltext, qr!^<a href="rootdir/wiki\.pl\?page=LinkMeElsewhere">!m,
-	'should handle extended links with flag' );
+$htmltext = Text::MediawikiFormat::format_line ($wikitext, \%tags, \%opts);
+like $htmltext, qr!^<a href='rootdir/wiki\.pl\?page=LinkMeElsewhere'>BYE!m,
+     'should handle extended links with flag';
 
-$htmltext = Text::MediawikiFormat::format($wikitext);
-like( $htmltext, qr!<strong>hello</strong>!, 'three ticks should mark strong');
-like( $htmltext, qr!<em>hi</em>!, 'two ticks should mark emphasized' );
+$htmltext = Text::MediawikiFormat::format ($wikitext);
+like $htmltext, qr!<strong>hello</strong>!, 'three ticks should mark strong';
+like $htmltext, qr!<em>hi</em>!, 'two ticks should mark emphasized';
 
-is( scalar @{ $tags{ordered} }, 3, 
-	'... default ordered entry should have three items' );
-is( ref( $tags{ordered}->[2] ), 'CODE', '... and should have subref' );
+is scalar @{$tags{ordered}}, 4,
+   '...default ordered entry should have four items';
+is join ('', map {ref $_} @{$tags{ordered}}), '',
+   '...and should have no subrefs';
 
 # make sure this starts a paragraph (buglet)
-$htmltext = Text::MediawikiFormat::format("nothing to see here\nmoveAlong\n", {}, 
-	{ prefix => 'foo=' });
-like( $htmltext, qr!^<p>nothing!, '... should start new text with paragraph' );
+$htmltext = Text::MediawikiFormat::format ("nothing to see here\nmoveAlong\n",
+					   {}, {prefix => 'foo='});
+like $htmltext, qr!^<p>nothing!, '...should start new text with paragraph';
 
 # another buglet had the wrong tag pairs when ending a list
 my $wikiexample =<<WIKIEXAMPLE;
 I am modifying this because ItIsFun.  There is:
-    1. MuchJoy
-    2. MuchFun
-    3. MuchToDo
+# MuchJoy
+# MuchFun
+# MuchToDo
 
 Here is a paragraph.
 There are newlines in my paragraph.
 
 Here is another paragraph.
 
-	  here is some code that should have ''literal'' double single quotes
-	  how amusing
+ here is some code that should have ''emphatic text''
+ how amusing
 
 WIKIEXAMPLE
 
-$htmltext = Text::MediawikiFormat::format($wikiexample, {}, { prefix => 'foo=' });
+$htmltext = Text::MediawikiFormat::format ($wikiexample, {},
+					   {prefix => 'foo='});
 
-like( $htmltext, qr!^<p>I am modifying this!,
-	'... should use correct tags when ending lists' );
-like( $htmltext, qr!<p>Here is a paragraph.<br />!,
-	'... should add no newline before paragraph, but at newline in paragraph ');
-like( $htmltext, qr!<p>Here is another paragraph.</p>!,
-	'... should add no newline at end of paragraph' );
-like( $htmltext, qr|''literal'' double single|,
-	'... should treat code sections literally' );
-unlike( $htmltext, qr!<(\w+)></\1>!, '... but should not create empty lists' );
+like $htmltext, qr!^<p>I am modifying this!,
+     '... should use correct tags when ending lists';
+like $htmltext, qr!<p>Here is a paragraph.\n!,
+     '...should add no newline before paragraph, but at newline in paragraph';
+like $htmltext, qr!<p>Here is another paragraph.</p>!,
+     '... should add no newline at end of paragraph';
+like $htmltext, qr|<em>emphatic text</em>|,
+     '...should sub markup in code sections';
+unlike $htmltext, qr!<(\w+)></\1>!, '...but should not create empty lists';
 
 $wikitext =<<WIKI;
 [escape spaces in links]
@@ -109,16 +113,14 @@ $wikitext =<<WIKI;
 WIKI
 
 %opts = (
-	prefix   => 'rootdir/wiki.pl?page=',
-	extended => 1,
+	prefix   => 'rootdir/wiki.pl?page='
 );
 
-$htmltext = Text::MediawikiFormat::format($wikitext, {}, \%opts);
-like( $htmltext,
-	qr!<a href="rootdir/wiki\.pl\?page=escape%20spaces%20in%20links">!m,
-	'... should escape spaces in extended links' );
-like( $htmltext, qr!escape spaces in links</a>!m,
-	'... should leave spaces alone in titles of extended links' );
+$htmltext = Text::MediawikiFormat::format ($wikitext, {}, \%opts);
+like $htmltext, qr!<a href='escape'!m,
+     '...should extended absolute links on spaces';
+like $htmltext, qr!spaces in links</a>!m,
+     '...should leave spaces alone in titles of extended links';
 
 $wikitext =<<'WIKI';
 = heading =
@@ -133,29 +135,27 @@ more text
 WIKI
 
 $htmltext = Text::MediawikiFormat::format($wikitext, \%tags, \%opts);
-like( $htmltext, qr!<h1>heading</h1>!,
-	'headings should be marked' );
-like( $htmltext, qr!<h2>sub heading</h2>!,
-	'... and numbered appropriately' );
+like $htmltext, qr!<h1>heading</h1>!, 'headings should be marked';
+like $htmltext, qr!<h2>sub heading</h2>!, '... and numbered appropriately';
 
 # test overridable tags
 
-ok( ! UNIVERSAL::can( 'main', 'wikiformat' ),
-	'Module should import nothing by default' );
+ok !UNIVERSAL::can ('main', 'wikiformat'),
+   'Module should import nothing by default';
 
-can_ok( 'Text::MediawikiFormat', 'import' );
+can_ok 'Text::MediawikiFormat', 'import';
 
 # given an argument, export wikiformat() somehow
 package Foo;
 
 Text::MediawikiFormat->import('wikiformat');
-::can_ok( 'Foo', 'wikiformat' );
+::can_ok 'Foo', 'wikiformat';
 
 package Bar;
-Text::MediawikiFormat->import( as => 'wf', prefix => 'foo', tag => 'bar' );
-::can_ok( 'Bar', 'wf' );
-::isnt( \&wf, \&Text::MediawikiFormat::format,
-	'... and should be a wrapper around format()' );
+Text::MediawikiFormat->import(as => 'wf', prefix => 'foo', tag => 'bar');
+::can_ok 'Bar', 'wf';
+::isnt \&wf, \&Text::MediawikiFormat::format,
+       '...and should be a wrapper around format()';
 
 my @args;
 local *Text::MediawikiFormat::_format;
@@ -164,13 +164,13 @@ local *Text::MediawikiFormat::_format;
 };
 
 wf();
-::is( $args[1]{prefix}, 'foo', 
-	'imported sub should pass through default option' );
-::is( $args[0]{tag}, 'bar', '... and default tag' );
+::is $args[1]{prefix}, 'foo', 
+     'imported sub should pass through default option';
+::is $args[0]{tag}, 'bar', '... and default tag';
 
-wf('text', { tag2 => 1 }, { prefix => 'baz' });
-::is( $args[2], 'text', '... passing through text unharmed' );
-::is( $args[3]{tag2}, 1, '... along with new tags' );
-::is( $args[4]{prefix}, 'baz', '... overriding default args as needed' );
+wf ('text', {tag2 => 1}, {prefix => 'baz'});
+::is $args[2], 'text', '...passing through text unharmed';
+::is $args[3]{tag2}, 1, '...along with new tags';
+::is $args[4]{prefix}, 'baz', '...overriding default args as needed';
 
 1;
