@@ -9,13 +9,11 @@ Text::MediawikiFormat - Translate Wiki markup into other text formats
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-# What version of Perl made `our' available?
-use vars qw{$VERSION};
-$VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
@@ -52,8 +50,7 @@ use Text::MediawikiFormat::Blocks;
 use URI;
 use URI::Escape;
 
-use vars qw{%tags %opts $missing_html_packages %merge_matrix};
-
+our $missing_html_packages;
 BEGIN
 {
     # Try to load optional HTML packages, recording any errors.
@@ -68,7 +65,7 @@ BEGIN
 ###
 ### Defaults
 ###
-%tags =
+our %tags =
 (
     indent		=> qr/^(?:[:*#;]*)(?=[:*#;])/,
     link		=> \&_make_html_link,
@@ -137,11 +134,11 @@ BEGIN
     _toc		=> [],
 );
 
-%opts =
+our %opts =
 (
     extended       => 1,
     implicit_links => 0,
-    absolute_links => 0,
+    absolute_links => 1,
     prefix         => '',
     process_html   => 1,
 );
@@ -175,7 +172,7 @@ sub _extract_opts
 
 # Shamelessly ripped from Hash::Merge, which doesn't work in a threaded
 # environment with two threads trying to use different merge matrices.
-%merge_matrix =
+our %merge_matrix =
 (
     SCALAR =>
     {
