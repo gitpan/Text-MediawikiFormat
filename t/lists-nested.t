@@ -5,7 +5,7 @@ BEGIN { chdir 't' if -d 't' }
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 8;
 
 use_ok 'Text::MediawikiFormat' or exit;
 my $wikitext =<<END_HERE;
@@ -67,3 +67,66 @@ like $htmltext,
      qr|<li>4<ul>\s*<li>4.1<ul>\s*<li>4.1.1</li>\s*<li>4.1.2</li>\s*</ul>
 	\s*</li>|sx,
      'nesting should be correct for spaces too';
+
+
+TODO: {
+     local $TODO = 'Dictionary lists not nesting correctly.';
+
+###
+### Dictionary Lists
+###
+$wikitext =<<END_HERE;
+; Term 1
+: Def 1.1
+:; Term 1.1.1 : Def 1.1.1.1
+:; Term 1.1.2 : Def 1.1.2.1
+:: Def 1.1.2.2
+:; Term 1.1.3
+:: Def 1.1.3.1
+::; Term 1.1.3.1.1 : Def 1.1.3.1.1.1
+; Term 2
+: Def 2.1
+: Def 2.2
+:; Term 2.2.1 : Def 2.2.1.1
+; Term 3 : Def 3.1
+END_HERE
+
+$htmltext = Text::MediawikiFormat::format ($wikitext);
+
+is $htmltext, '', 'dictionary lists nest correctly';
+
+$wikitext =<<END_HERE;
+; A
+: A.a
+:# A.a.1
+:## A.a.1.1
+:# A.a.2
+:#* A.a.2.*
+:#* A.a.2.*
+:#*# A.a.2.*.1
+: A.b
+END_HERE
+
+$htmltext = Text::MediawikiFormat::format ($wikitext);
+
+is $htmltext, '<dl>
+<dt>A</dt>
+<dd>A.a</dd>
+<ol>
+<li>A.a.1<ol>
+<li>A.a.1.1</li>
+</ol>
+</li>
+<li>A.a.2<ul>
+<li>A.a.2.*</li>
+<li>A.a.2.*<ol>
+<li>A.a.2.*.1</li>
+</ol>
+</li>
+</ul>
+</li>
+</ol>
+<dd>A.b</dd>
+</dl>
+', 'lists nest correctly within dictionary lists';
+};

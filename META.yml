@@ -1,10 +1,10 @@
 ---
 name: Text-MediawikiFormat
 version: !!perl/hash:Module::Build::Version
-  original: 0.03
+  original: 0.04
   version:
     - 0
-    - 30
+    - 40
 author: []
 abstract: Translate Wiki markup into other text formats
 license: perl
@@ -18,7 +18,7 @@ build_requires:
 provides:
   Text::MediawikiFormat:
     file: lib/Text/MediawikiFormat.pm
-    version: 0.03
+    version: 0.04
   Text::MediawikiFormat::Block:
     file: lib/Text/MediawikiFormat/Blocks.pm
   Text::MediawikiFormat::Blocks:

@@ -1,3 +1,6 @@
+0.04	September 27, 2006
+	- Process absolute links more robustly.
+
 0.03	September 27, 2006
 	- Default to absolute_links => 1.
 	- Prefer "our" to "use vars".

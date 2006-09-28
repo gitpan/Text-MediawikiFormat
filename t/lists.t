@@ -5,7 +5,7 @@ BEGIN { chdir 't' if -d 't' }
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 
 use_ok 'Text::MediawikiFormat' or exit;
 ok exists $Text::MediawikiFormat::tags{blockorder},
@@ -31,3 +31,34 @@ like $htmltext, qr!<li>first list item!,
      'lists should be able to start on the first line of text';
 like $htmltext, qr!href='Wiki%20Link'!,
      'list item content should be formatted';
+
+###
+### Dictionary Lists
+###
+$wikitext =<<END_HERE;
+; Term 1 : definition 1.1
+: definition 1.2
+; Term 2
+: definition 2.1
+: definition 2.2
+
+: indented 1
+: indented 2
+END_HERE
+
+$htmltext = Text::MediawikiFormat::format ($wikitext);
+
+is $htmltext, '<dl>
+<dt>Term 1</dt>
+<dd>definition 1.1</dd>
+<dd>definition 1.2</dd>
+<dt>Term 2</dt>
+<dd>definition 2.1</dd>
+<dd>definition 2.2</dd>
+</dl>
+<dl>
+<dd>indented 1</dd>
+<dd>indented 2</dd>
+</dl>
+',
+   'dictionary lists format correctly';

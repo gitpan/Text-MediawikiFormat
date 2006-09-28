@@ -9,11 +9,11 @@ Text::MediawikiFormat - Translate Wiki markup into other text formats
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 =head1 SYNOPSIS
 
@@ -417,15 +417,20 @@ sub _dl
 	    $term = $1;
 	    $def = $2;
 	}
+	else
+	{
+	    $term = $_[0];
+	}
     }
     else
     {
-	*def = \$_[0];
+	$def = $_[0];
     }
 
-    my $retval;
-    $retval = "<dt>$term</dt>\n" if defined $term;
-    $retval .= "<dd>$def</dd>\n" if defined $def;
+    my @retval;
+    push @retval, "<dt>", $term, "</dt>\n" if defined $term;
+    push @retval, "<dd>", $def, "</dd>\n" if defined $def;
+    return @retval;
 }
 
 # Makes a regex out of the allowed schema array.
@@ -435,12 +440,22 @@ sub _make_schema_regex
     return qr/(?:$re)/;
 }
 
+our $uric = $URI::uric;
+our $uricCheat = $uric;
+
+# We need to avoid picking up 'HTTP::Request::Common' so we have a
+# subset of uric without a colon.
+$uricCheat =~ tr/://d;
+
+# Identifying characters often accidentally picked up trailing a URI.
+our $uriCruft = q/]),.!'";}/;
+
 # Turn [[Wiki Link|Title]], [URI Title], scheme:url, or StudlyCaps into links.
 sub _make_html_link
 {
     my ($tag, $opts, $tags) = @_;
 
-    my $class = '';
+    my ($class, $trailing) = ('', '');
     my ($href, $title);
     if ($tag =~ /^\[\[([^|#]*)(?:(#)([^|]*))?(?:(\|)(.*))?\]\]$/)
     {
@@ -490,11 +505,13 @@ sub _make_html_link
 	$tags->{_schema_regex} ||= _make_schema_regex @{$tags->{schemas}};
 	my $s = $tags->{_schema_regex};
 
-	if ($tag =~ /^($s:\S+)$/)
+	if ($tag =~ /^($s:[$uricCheat][$uric]*>?)$/)
 	{
 	    # absolute link
 	    $href = $1;
-	    $title = $1;
+	    $trailing = $&
+		if (!($href =~ s/^<(.+)>$/$1/) && $href =~ s/[$uriCruft]$//);
+	    $title = $href;
 	}
 	else
 	{
@@ -504,7 +521,7 @@ sub _make_html_link
 	}
     }
 
-    return "<a$class href='$href'>$title</a>";
+    return "<a$class href='$href'>$title</a>$trailing";
 }
 
 # Store a TOC line for later.
@@ -972,18 +989,17 @@ sub _process_block
 		next;
 	}
 
+	my @triplets;
 	if ((ref ($start_line) || '') eq 'CODE')
 	{
-	    (my $start_line, $line, $end_line) = 
-		$start_line->($line, $block->level(),
-			      $block->shift_args(), $tags, $opts);
-	    push @text, $start_line;
+	    @triplets = $start_line->($line, $block->level(),
+				      $block->shift_args(), $tags, $opts);
 	}
 	else
 	{
-	    push @text, $start_line;
+	    @triplets = ($start_line, $line, $end_line);
 	}
-	push @text, $line, $end_line;
+	push @text, @triplets;
     }
 
     pop @text if $between;
@@ -1052,7 +1068,7 @@ sub _find_links
 {
     my ($text, $tags, $opts) = @_;
 
-    my $s;
+    my ($s, $f);
     if ($opts->{absolute_links})
     {
 	$tags->{_schema_regex} ||= _make_schema_regex @{$tags->{schemas}};
@@ -1062,7 +1078,7 @@ sub _find_links
     if (ref $tags->{extended_link_delimiters} eq "ARRAY")
     {
 	# Backwards compatibility for absolute links
-	$text =~ s!(?<=\s)$s:\S+!$tags->{link}->($&, $opts, $tags)!egi
+	$text =~ s!\b$s:\S+!$tags->{link}->($&, $opts, $tags)!egi
 	    if $opts->{absolute_links};
 
 	my ($start, $end) = @{$tags->{extended_link_delimiters}};
@@ -1083,7 +1099,7 @@ sub _find_links
     {
 	# Build Regexp
 	my @res;
-	push @res, qr/(?<=\s)$s:\S+/
+	push @res, qr/\b$s:\S+/
 	    if $opts->{absolute_links};		# URL
 	push @res, qr/$tags->{extended_link_delimiters}/
 	    if $opts->{extended};		# [[Wiki Page]]

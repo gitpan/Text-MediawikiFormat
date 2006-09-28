@@ -5,8 +5,9 @@ BEGIN { chdir 't' if -d 't' }
 use strict;
 use warnings;
 
-use Test::More tests => 4;
-use Text::MediawikiFormat;
+use Test::More tests => 6;
+use Text::MediawikiFormat implicit_links =>0, absolute_links => 0,
+			  process_html => 0;
 
 my $wikitext = <<'WIKI';
 
@@ -49,3 +50,15 @@ $htmltext = Text::MediawikiFormat::format ($wikitext, {schemas => ['moose']},
 is $htmltext,
    qq{<p>this is a <a href='moose:notalink'>moose:notalink</a></p>\n},
    q{Schema tag allows specifying what is a link};
+
+$wikitext = <<'WIKI';
+
+http://www.cpan.org/.
+WIKI
+
+$htmltext = Text::MediawikiFormat::format ($wikitext, {},
+					   {absolute_links => 1});
+like $htmltext, qr{href='http://www.cpan.org/'>},
+     'Links work at beginning of line and lose cruft';
+like $htmltext, qr{org/</a>\.},
+     'Cruft restored after link';
