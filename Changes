@@ -1,3 +1,6 @@
+0.05
+	- Remove the <> when linkifying <http://absolute.link>.
+
 0.04	September 27, 2006
 	- Process absolute links more robustly.
 

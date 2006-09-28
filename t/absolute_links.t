@@ -5,7 +5,7 @@ BEGIN { chdir 't' if -d 't' }
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 7;
 use Text::MediawikiFormat implicit_links =>0, absolute_links => 0,
 			  process_html => 0;
 
@@ -54,6 +54,8 @@ is $htmltext,
 $wikitext = <<'WIKI';
 
 http://www.cpan.org/.
+
+A link in angle brackets: <http://link.org>.
 WIKI
 
 $htmltext = Text::MediawikiFormat::format ($wikitext, {},
@@ -62,3 +64,5 @@ like $htmltext, qr{href='http://www.cpan.org/'>},
      'Links work at beginning of line and lose cruft';
 like $htmltext, qr{org/</a>\.},
      'Cruft restored after link';
+like $htmltext, qr{>http://link\.org</a>\.},
+     'Angle brackets around links are removed';

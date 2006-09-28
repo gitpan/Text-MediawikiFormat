@@ -9,11 +9,11 @@ Text::MediawikiFormat - Translate Wiki markup into other text formats
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =cut
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 =head1 SYNOPSIS
 
@@ -505,12 +505,12 @@ sub _make_html_link
 	$tags->{_schema_regex} ||= _make_schema_regex @{$tags->{schemas}};
 	my $s = $tags->{_schema_regex};
 
-	if ($tag =~ /^($s:[$uricCheat][$uric]*>?)$/)
+	if ($tag =~ /^(?:&lt;)?$s:[$uricCheat][$uric]*(?:&gt;)?$/)
 	{
 	    # absolute link
-	    $href = $1;
-	    $trailing = $&
-		if (!($href =~ s/^<(.+)>$/$1/) && $href =~ s/[$uriCruft]$//);
+	    $href = $&;
+	    $trailing = $& if $href =~ s/[$uriCruft]$//;
+	    $href =~ s/^(?:&lt;)?(.+?)(?:&gt;)?$/$1/;
 	    $title = $href;
 	}
 	else
@@ -1078,7 +1078,8 @@ sub _find_links
     if (ref $tags->{extended_link_delimiters} eq "ARRAY")
     {
 	# Backwards compatibility for absolute links
-	$text =~ s!\b$s:\S+!$tags->{link}->($&, $opts, $tags)!egi
+	$text =~ s/(?:&lt;)?\b$s:[$uricCheat][$uric]*(?:&gt;)?/
+		   $tags->{link}->($&, $opts, $tags)/egi
 	    if $opts->{absolute_links};
 
 	my ($start, $end) = @{$tags->{extended_link_delimiters}};
@@ -1099,7 +1100,7 @@ sub _find_links
     {
 	# Build Regexp
 	my @res;
-	push @res, qr/\b$s:\S+/
+	push @res, qr/(?:&lt;)?\b$s:[$uricCheat][$uric]*(?:&gt;)?/
 	    if $opts->{absolute_links};		# URL
 	push @res, qr/$tags->{extended_link_delimiters}/
 	    if $opts->{extended};		# [[Wiki Page]]
