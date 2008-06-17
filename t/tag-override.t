@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 13;
-use Text::MediawikiFormat;
+use Text::MediawikiFormat as => 'wf', process_html => 0;
 
 my $wikitext =<<WIKI;
 
@@ -19,7 +19,7 @@ my $wikitext =<<WIKI;
 
 WIKI
 
-my $htmltext = Text::MediawikiFormat::format($wikitext);
+my $htmltext = wf ($wikitext);
 like ($htmltext, qr!<li>This should be a list.</li>!m,
       'unordered lists should be rendered correctly');
 like ($htmltext, qr!<li>This should be an ordered list.</li>!m,
@@ -34,7 +34,7 @@ my %tags = (
 	},
 );
 
-$htmltext = Text::MediawikiFormat::format ($wikitext, \%tags, {});
+$htmltext = wf ($wikitext, \%tags);
 like ($htmltext, qr!<li>This should be a list.</li>!m,
       'unordered should remain okay when we redefine all list regexps');
 like ($htmltext, qr!<li>This should be an ordered list.</li>!m,
@@ -49,7 +49,7 @@ like ($htmltext, qr!<li>This should be an ordered list.</li>!m,
 	},
 );
 
-$htmltext = Text::MediawikiFormat::format ($wikitext, \%tags, {});
+$htmltext = wf ($wikitext, \%tags);
 like ($htmltext, qr!<li>But marked differently</li>!m,
       'unordered should still work when redefined');
 like ($htmltext, qr!<li>This should be an ordered list.</li>!m,
@@ -60,7 +60,7 @@ like ($htmltext, qr!<li>This should be an ordered list.</li>!m,
 	blocks => {unordered => qr/^!\s*/},
 );
 
-$htmltext = Text::MediawikiFormat::format ($wikitext, \%tags, {});
+$htmltext = wf ($wikitext, \%tags);
 like ($htmltext, qr!<li>This is like the default unordered list</li>!m,
       'redefining just one list type should work for that type');
 like ($htmltext, qr!<li>This should be an ordered list.</li>!m,
@@ -74,7 +74,7 @@ like ($htmltext, qr!<li>This should be an ordered list.</li>!m,
 );
 
 $wikitext = 'this is *strong*, /emphasized/, and */emphasized strong/*';
-$htmltext = Text::MediawikiFormat::format( $wikitext, \%tags, {} );
+$htmltext = wf ($wikitext, \%tags);
 
 like( $htmltext, qr!<strong>strong</strong>!, '... overriding strong tag' );
 like( $htmltext, qr!<em>emphasized</em>!,     '... overriding emphasized tag' );
@@ -88,6 +88,7 @@ Text::MediawikiFormat->import(
 	blocks => {
 		unordered => qr/^!\s*/
 	},
+	process_html => 0,
 );
 
 $htmltext = wf ("!1. Ordered list\n! Unordered list",

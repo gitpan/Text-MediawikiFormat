@@ -9,11 +9,11 @@ Text::MediawikiFormat - Translate Wiki markup into other text formats
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 =head1 SYNOPSIS
 
@@ -203,7 +203,7 @@ our %merge_matrix =
 	HASH   => sub {_merge_hash_elements ($_[0], $_[1])}
     }
 );
-# Return a copy of arrays and a deep copy of hashes.
+# Return arrays and a deep copy of hashes.
 sub _clone
 {
     my ($obj) = @_;
@@ -219,7 +219,7 @@ sub _clone
     }
 
     return $obj if $type eq 'SCALAR';
-    return [@$obj] if $type eq 'ARRAY';
+    return $obj if $type eq 'ARRAY';
 
     my %copy;
     foreach my $key (keys %$obj)
@@ -329,7 +329,7 @@ sub import
 
 C<format()> takes one required argument, the text to convert, and returns the
 converted text.  It allows two optional arguments.  The first is a reference to
-a hash of tags used to override the functions default behavior.  Anything
+a hash of tags used to override the function's default behavior.  Anything
 passed in here will override the default tags.  The second argument is a hash
 reference of options.  The options are currently:
 
@@ -575,7 +575,7 @@ sub _format
 	$opts = _merge_hashes ($opts || {}, $iopts);
 
 	_require_html_packages
-	    if $iopts->{process_html};
+	    if $opts->{process_html};
 
 	# Always verify the blocks since the user may have slagged the
 	# default hash on import.
@@ -889,7 +889,7 @@ sub _find_blocks
     else
     {
 	# The original behavior.
-	for my $line ( split(/\r?\n/, $text) )
+	for my $line (split /\r?\n/, $text)
 	{
 	    my $block = _start_block ($line, $tags, $opts);
 	    push @blocks, $block if $block;

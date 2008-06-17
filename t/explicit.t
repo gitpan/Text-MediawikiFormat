@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 9;
-use Text::MediawikiFormat;
+use Text::MediawikiFormat as => 'wf', process_html => 0;
 
 my $wikitext =<<WIKI;
 
@@ -18,7 +18,7 @@ my $wikitext =<<WIKI;
 
 WIKI
 
-my $htmltext = Text::MediawikiFormat::format ($wikitext);
+my $htmltext = wf ($wikitext);
 like $htmltext, qr!'Ordinary'>extended link</a>!m,
      'extended links rendered correctly with default delimiters';
 like $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m,
@@ -31,7 +31,7 @@ my %tags = (
 	extended_link_delimiters => qr/(\[(?:\[[^][]*\]|[^][]*)\])/,
 );
 
-$htmltext = Text::MediawikiFormat::format ($wikitext, \%tags);
+$htmltext = wf ($wikitext, \%tags);
 like $htmltext, qr!'Ordinary'>extended link</a>!m,
      'extended links rendered correctly with default delimiters';
 like $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m,
@@ -45,7 +45,7 @@ like $htmltext, qr!Usemod%20extended%20link'>Usemod extended link</a>!m,
 	extended_link_delimiters => [qw([ ])],
 );
 
-$htmltext = Text::MediawikiFormat::format ($wikitext, \%tags);
+$htmltext = wf ($wikitext, \%tags);
 
 unlike $htmltext, qr!'Ordinary'>extended link</a>!m,
        'extended links rendered correctly with default delimiters';

@@ -6,7 +6,8 @@ use strict;
 use warnings;
 
 use Test::More tests => 7;
-use Text::MediawikiFormat as => 'wikiformat', implicit_links => 1;
+use Text::MediawikiFormat as => 'wikiformat', implicit_links => 1,
+			  process_html => 0;
 
     my $wikitext = "
 WikiTest

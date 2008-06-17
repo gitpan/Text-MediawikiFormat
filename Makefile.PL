@@ -7,6 +7,7 @@ WriteMakefile
           'PREREQ_PM' => {
                            'Scalar::Util' => '1.14',
                            'Test::More' => '0.3',
+                           'URI' => '',
                            'URI::Escape' => ''
                          },
           'INSTALLDIRS' => 'site',

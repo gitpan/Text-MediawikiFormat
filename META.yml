@@ -1,10 +1,6 @@
 ---
 name: Text-MediawikiFormat
-version: !!perl/hash:Module::Build::Version
-  original: 0.05
-  version:
-    - 0
-    - 50
+version: 0.06
 author: []
 abstract: Translate Wiki markup into other text formats
 license: perl
@@ -12,18 +8,22 @@ resources:
   license: http://dev.perl.org/licenses/
 requires:
   Scalar::Util: 1.14
+  URI: ''
   URI::Escape: ''
 build_requires:
   Test::More: 0.3
+recommends:
+  HTML::Parser: ''
+  HTML::Tagset: ''
 provides:
   Text::MediawikiFormat:
     file: lib/Text/MediawikiFormat.pm
-    version: 0.05
+    version: 0.06
   Text::MediawikiFormat::Block:
     file: lib/Text/MediawikiFormat/Blocks.pm
   Text::MediawikiFormat::Blocks:
     file: lib/Text/MediawikiFormat/Blocks.pm
-generated_by: Module::Build version 0.2804
+generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
   version: 1.2

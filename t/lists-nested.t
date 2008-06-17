@@ -7,7 +7,8 @@ use warnings;
 
 use Test::More tests => 8;
 
-use_ok 'Text::MediawikiFormat' or exit;
+use_ok 'Text::MediawikiFormat', as => 'wf', process_html => 0 or exit;
+
 my $wikitext =<<END_HERE;
 * start of list
 * second line
@@ -15,7 +16,7 @@ my $wikitext =<<END_HERE;
 * now back to the first
 END_HERE
 
-my $htmltext = Text::MediawikiFormat::format ($wikitext);
+my $htmltext = wf ($wikitext);
 like $htmltext, qr|second line<ul>.*?<li>indented|s,
      'nested lists should start correctly';
 like $htmltext, qr|indented list.*?</li>.*?</ul>|s,
@@ -35,7 +36,7 @@ $wikitext =<<END_HERE;
 * 5
 END_HERE
 
-$htmltext = Text::MediawikiFormat::format ($wikitext);
+$htmltext = wf ($wikitext);
 
 like $htmltext,
      qr|<ul>\s*
@@ -91,7 +92,7 @@ $wikitext =<<END_HERE;
 ; Term 3 : Def 3.1
 END_HERE
 
-$htmltext = Text::MediawikiFormat::format ($wikitext);
+$htmltext = wf ($wikitext);
 
 is $htmltext, '', 'dictionary lists nest correctly';
 
@@ -107,7 +108,7 @@ $wikitext =<<END_HERE;
 : A.b
 END_HERE
 
-$htmltext = Text::MediawikiFormat::format ($wikitext);
+$htmltext = wf ($wikitext);
 
 is $htmltext, '<dl>
 <dt>A</dt>

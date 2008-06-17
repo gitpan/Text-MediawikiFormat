@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 3;
-use Text::MediawikiFormat;
+use Text::MediawikiFormat as => 'wf', process_html => 0;
 
 my $wikitext = <<WIKI;
 
@@ -15,7 +15,7 @@ my $wikitext = <<WIKI;
 WIKI
 
 {
-    my $htmltext = Text::MediawikiFormat::format ($wikitext, {}, {});
+    my $htmltext = wf ($wikitext);
     is $htmltext,
        qq{<p>[[SuperLink|<a href='Description'>Desc</a> of the }
        . qq{<a href='Link'>Link</a>]]</p>\n},
@@ -27,7 +27,7 @@ WIKI
     my %tags = (extended_link_delimiters => [qw{[[ ]]}],
 		link => \&_make_html_link);
 
-    my $htmltext = Text::MediawikiFormat::format ($wikitext, \%tags, {});
+    my $htmltext = wf ($wikitext, \%tags);
     is $htmltext,
        qq{<p><a href='SuperLink'><a href='Description'>Desc</a> of the }
        . qq{<a href='Link'>Link</a></a></p>\n},
@@ -50,7 +50,7 @@ TODO:
     my %tags = (link => \&link_handler);
 
     # Or with the link handler overridden.
-    my $htmltext = Text::MediawikiFormat::format ($wikitext, \%tags, {});
+    my $htmltext = wf ($wikitext, \%tags);
     is $htmltext,
        "<p>Desc of the </p>\n",
        '...and also work with a handler override.';

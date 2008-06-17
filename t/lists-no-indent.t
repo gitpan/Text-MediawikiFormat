@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 7;
-use Text::MediawikiFormat;
+use Text::MediawikiFormat as => 'wf', process_html => 0;
 
 my $wikitext =<<WIKI;
 
@@ -25,7 +25,7 @@ my $wikitext =<<WIKI;
 
 WIKI
 
-my $htmltext = Text::MediawikiFormat::format($wikitext);
+my $htmltext = wf ($wikitext);
 like $htmltext, qr!<li>This should be a list.</li>!m,
      'unordered lists should render correctly';
 like $htmltext, qr!<li>This should be an ordered list.</li>!m,
@@ -40,7 +40,7 @@ my %tags = (
 	},
 );
 
-$htmltext = Text::MediawikiFormat::format ($wikitext, \%tags, {} );
+$htmltext = wf ($wikitext, \%tags);
 like $htmltext, qr!<li>This should be a list.</li>!m,
      'unordered should remain okay when we redefine all list regexps';
 like $htmltext, qr!<li>This should be an ordered list.</li>!m,
@@ -55,7 +55,7 @@ like $htmltext, qr!<li>This should be an ordered list.</li>!m,
 	},
 );
 
-$htmltext = Text::MediawikiFormat::format ($wikitext, \%tags, {});
+$htmltext = wf ($wikitext, \%tags);
 like $htmltext, qr!<li>But marked differently</li>!m,
      'unordered should still work when redefined';
 like $htmltext, qr!<li>This should be an ordered list.</li>!m,
@@ -72,6 +72,6 @@ like $htmltext, qr!<li>This should be an ordered list.</li>!m,
     indented => {unordered => 0},
 );
 
-$htmltext = Text::MediawikiFormat::format ($wikitext, \%tags, {});
+$htmltext = wf ($wikitext, \%tags);
 like $htmltext, qr!<li># But not indented!m,
      'redefining a list type to require no indent should work';

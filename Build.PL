@@ -35,8 +35,14 @@ my $build = $class->new(
 	module_name => 'Text::MediawikiFormat',
 	requires    =>
 	{
-		'URI::Escape'  => '',
-		'Scalar::Util' => '1.14',
+		'Scalar::Util'	=> '1.14',
+		'URI'		=> '',
+		'URI::Escape'	=> '',
+	},
+	recommends    =>
+	{
+		'HTML::Parser'	=> '',
+		'HTML::Tagset'	=> '',
 	},
 	build_requires =>
 	{

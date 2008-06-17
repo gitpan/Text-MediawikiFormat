@@ -47,6 +47,7 @@ my %opts = (
 	prefix => 'rootdir/wiki.pl?page=',
 	implicit_links => 1,
 	extended => 0,
+	process_html => 0,
 );
 
 my $htmltext = Text::MediawikiFormat::format_line ($wikitext, \%tags, \%opts);
@@ -63,7 +64,7 @@ $htmltext = Text::MediawikiFormat::format_line ($wikitext, \%tags, \%opts);
 like $htmltext, qr!^<a href='rootdir/wiki\.pl\?page=LinkMeElsewhere'>BYE!m,
      'should handle extended links with flag';
 
-$htmltext = Text::MediawikiFormat::format ($wikitext);
+$htmltext = Text::MediawikiFormat::format ($wikitext, {}, {process_html => 0});
 like $htmltext, qr!<strong>hello</strong>!, 'three ticks should mark strong';
 like $htmltext, qr!<em>hi</em>!, 'two ticks should mark emphasized';
 
@@ -74,7 +75,9 @@ is join ('', map {ref $_} @{$tags{ordered}}), '',
 
 # make sure this starts a paragraph (buglet)
 $htmltext = Text::MediawikiFormat::format ("nothing to see here\nmoveAlong\n",
-					   {}, {prefix => 'foo='});
+					   {},
+					   {prefix => 'foo=',
+					    process_html => 0});
 like $htmltext, qr!^<p>nothing!, '...should start new text with paragraph';
 
 # another buglet had the wrong tag pairs when ending a list
@@ -95,7 +98,8 @@ Here is another paragraph.
 WIKIEXAMPLE
 
 $htmltext = Text::MediawikiFormat::format ($wikiexample, {},
-					   {prefix => 'foo='});
+					   {prefix => 'foo=',
+					    process_html => 0});
 
 like $htmltext, qr!^<p>I am modifying this!,
      '... should use correct tags when ending lists';
@@ -113,7 +117,8 @@ $wikitext =<<WIKI;
 WIKI
 
 %opts = (
-	prefix   => 'rootdir/wiki.pl?page='
+	prefix   => 'rootdir/wiki.pl?page=',
+	process_html => 0,
 );
 
 $htmltext = Text::MediawikiFormat::format ($wikitext, {}, \%opts);
@@ -145,14 +150,22 @@ ok !UNIVERSAL::can ('main', 'wikiformat'),
 
 can_ok 'Text::MediawikiFormat', 'import';
 
-# given an argument, export wikiformat() somehow
-package Foo;
+SKIP: {
+    # process_html defaults to 1, so we can't test the single-argument version
+    # of the importer without the HTML modules.
+    eval { require HTML::Parser; require HTML::Tagset; };
+    skip "HTML::Parser or HTML::Tagset not installed", 1 if $@;
 
-Text::MediawikiFormat->import('wikiformat');
-::can_ok 'Foo', 'wikiformat';
+    # given an argument, export wikiformat() somehow
+    package Foo;
+
+    Text::MediawikiFormat->import('wikiformat');
+    ::can_ok 'Foo', 'wikiformat';
+}
 
 package Bar;
-Text::MediawikiFormat->import(as => 'wf', prefix => 'foo', tag => 'bar');
+Text::MediawikiFormat->import(as => 'wf', prefix => 'foo', tag => 'bar',
+			      process_html => 0);
 ::can_ok 'Bar', 'wf';
 ::isnt \&wf, \&Text::MediawikiFormat::format,
        '...and should be a wrapper around format()';

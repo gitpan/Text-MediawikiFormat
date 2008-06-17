@@ -6,27 +6,22 @@ use strict;
 use warnings;
 
 use Test::More tests => 3;
-use Text::MediawikiFormat;
+use Text::MediawikiFormat as => 'wf', prefix => 'rootdir/wiki.pl?page=',
+			  process_html => 0;
 
 my $wikitext =<<WIKI;
 StudlyCaps
 
 WIKI
 
-my %opts = ( 
-	prefix => 'rootdir/wiki.pl?page=',
-);
-
-my $htmltext = Text::MediawikiFormat::format($wikitext, {}, \%opts );
+my $htmltext = wf ($wikitext);
 unlike $htmltext, qr!<a href='rootdir/wiki\.pl\?page=StudlyCaps'>!m,
        'should create links from StudlyCaps if implicit_links is left alone';
 
-$opts{implicit_links} = 0;
-$htmltext = Text::MediawikiFormat::format($wikitext, {}, \%opts );
+$htmltext = wf ($wikitext, {}, {implicit_links => 0});
 unlike ($htmltext, qr!<a href='rootdir/wiki\.pl\?page=StudlyCaps'>!m,
 	'...and if implicit_links set to 0');
 
-$opts{implicit_links} = 1;
-$htmltext = Text::MediawikiFormat::format($wikitext, {}, \%opts );
+$htmltext = wf ($wikitext, {}, {implicit_links => 1});
 like ($htmltext, qr!<a href='rootdir/wiki\.pl\?page=StudlyCaps'>!m,
       '...and if implicit_links set to 0');

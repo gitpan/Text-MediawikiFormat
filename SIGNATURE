@@ -1,5 +1,5 @@
 This file contains message digests of all files listed in MANIFEST,
-signed via the Module::Signature module, version 0.54.
+signed via the Module::Signature module, version 0.55.
 
 To verify the content in this distribution, first make sure you have
 Module::Signature installed, then type:
@@ -15,36 +15,36 @@ not run its Makefile.PL or Build.PL.
 Hash: SHA1
 
 SHA1 de99730c9cff5401331cc9b10da8fffc2607119e ARTISTIC
-SHA1 5afa62d27ffff890a5241895ec108ebc0494e007 Build.PL
-SHA1 0ec8159cbc372048456516dfbec09748a9cd4ae3 Changes
+SHA1 13e6a8bbb77e00b3741cb10210385cc5aa964639 Build.PL
+SHA1 6807fb760e053c7ed55df7185849482b21a6573f Changes
 SHA1 2d29c273fda30310211bbf6a24127d589be09b6c GPL
 SHA1 eccb0808083e42742ab218aade252010ec49a567 MANIFEST
-SHA1 5a7db1be7717492ca3d35feacaca0428eb1b5ed3 META.yml
-SHA1 3080913f922df68c38ddb4224c5b5b26648a321e Makefile.PL
+SHA1 619374394082871ba6345c51ff6a1264e81c7d33 META.yml
+SHA1 222c07dad7e2aa90ad8b5b1a129501864e808e07 Makefile.PL
 SHA1 32770eb383f51fec27a092d2c39f0b1c302df6e6 README
-SHA1 66f0c439f39ba054e350338371339eab3797239a lib/Text/MediawikiFormat.pm
+SHA1 70607ea0b493f1886156d95f324aef8300637f90 lib/Text/MediawikiFormat.pm
 SHA1 37cbafb6a1c89ab64d2da3ab0144473149c22e67 lib/Text/MediawikiFormat/Blocks.pm
-SHA1 262989c7e29e390c4892a4900c1ee06d7a428a63 t/Wiki.t
-SHA1 17988aee81b8c05dff4bf85cf0d127aa36dec9cd t/absolute_links.t
-SHA1 b04c0e9ae00bfb066d146e2e1d4409d8283ed929 t/base.t
-SHA1 aeb5c4bdc543ada1bba29386fbdd0c90c01ef472 t/bugs.t
+SHA1 ef2be655ddbe6b687036bac53ef5c9fa4a1d9cda t/Wiki.t
+SHA1 3248acce2d49bd25eaa61b51f4630bb78d7992bf t/absolute_links.t
+SHA1 07f01b6a7511167a0a048eaeba49c21703ecd851 t/base.t
+SHA1 58bda1b6c861954fe64dfd3d42733c186c60e858 t/bugs.t
 SHA1 e7fbd29bd994639e82a480ca7668208c84faf780 t/developer/0-signature.t
 SHA1 9f8e6742d15fc02f70fea8c7883e534b5ab0027e t/developer/pod-coverage.t
 SHA1 0190346d7072d458c8a10a45c19f86db641dcc48 t/developer/pod.t
-SHA1 c566721546586769105f46f73a77bf730939d259 t/embedded-links.t
-SHA1 cdd0b0d3a1ec538468338692f1bf6c38571f8af8 t/explicit.t
-SHA1 337d53b2dedc0583aa33dc722c6eb1797aa3bd27 t/implicit.t
-SHA1 ae832a2139c86b501f9a071393b7434d60a63047 t/kake.t
-SHA1 808237684b687c20d96f41f998819ff32da1ae85 t/lists-nested.t
-SHA1 4fc52712c3c4e928cf71f4713fdcddb7eadf52bb t/lists-no-indent.t
-SHA1 a37ac0dfdaa6c005eebeac80267c34b118a4a078 t/lists.t
+SHA1 f993d00de083d643d8ebed4062f14cf6a7ba2847 t/embedded-links.t
+SHA1 620d2901a191bd182b801e5193cd938c19340950 t/explicit.t
+SHA1 2db2a62fd0cacd77d97c312c081c0241980280c2 t/implicit.t
+SHA1 21ff269912cb7c55747c77169e2df0450fdaa6c6 t/kake.t
+SHA1 9740649ac71c3d4403ed3b6dce1bac041638205d t/lists-nested.t
+SHA1 5713a12de8a4e2cf863d6f90e0c49e059bacc644 t/lists-no-indent.t
+SHA1 57fb2f18307ef9f9ac651ceacec61e1f7724f66b t/lists.t
 SHA1 215c991a6720a20072cd3b7f4c6aa5241855aee0 t/merge-hash.t
-SHA1 b9163246df082a7b91844c94a8830bc8344b92a0 t/tag-override-use-as.t
-SHA1 99b36df397afa1d042dbc0efde8e28eb1202b594 t/tag-override.t
+SHA1 d39515a8cbb326ec66ed78265851a1d7e7c868e5 t/tag-override-use-as.t
+SHA1 f666a066c32d2ddf8dcc9aa580aeb1e7ee2d39e4 t/tag-override.t
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.2.2 (GNU/Linux)
 
-iD8DBQFFG0trLD1OTBfyMaQRAkcZAJ98fBlxBCG6Iu/cNSz8t3qiOARN2QCdHdpB
-YgU73pVgnGdWlLx2WsMs8z0=
-=THGM
+iD8DBQFIWBi+LD1OTBfyMaQRAoW9AKDtY/X684oNF3Lol/kf3h3nYlD+pwCfbaGu
+Sr8VTo1m9koyrSAZO7IRycE=
+=BOP5
 -----END PGP SIGNATURE-----

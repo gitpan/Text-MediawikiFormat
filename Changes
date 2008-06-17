@@ -1,4 +1,13 @@
-0.05
+Revision history for Text-MediawikiFormat
+
+0.06    June 17, 2008
+	- Tests skip HTML processing when HTML::Parser and HTML::Tagset are
+	  not installed.
+	- format() actually processes the options hash.
+	- Change _clone to Return arrays and a deep copy of hashes. 
+	  Rather than a copy of arrays.
+
+0.05    September 28, 2006
 	- Remove the <> when linkifying <http://absolute.link>.
 
 0.04	September 27, 2006

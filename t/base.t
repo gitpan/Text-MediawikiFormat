@@ -125,7 +125,7 @@ like $result, qr!<ul>\n<li>my</li>!m, '...and unordered list';
 like $result, qr!</li>\n</ul>\n</li>\n</ol>!, '...nesting properly';
 
 my $f          = fetchsub( 'format' );
-my $fullresult = $f->(<<END_WIKI, $tags);
+my $fullresult = $f->(<<END_WIKI, $tags, {process_html => 0});
 == my header ==
 
 my
@@ -143,7 +143,7 @@ END_WIKI
 
 is $fullresult, $result, 'format() should give same results';
 
-$fullresult = $f->(<<END_WIKI, $tags);
+$fullresult = $f->(<<END_WIKI, $tags, {process_html => 0});
 = heading =
 
 * aliases can expire

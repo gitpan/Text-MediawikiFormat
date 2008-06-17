@@ -7,7 +7,7 @@ use warnings;
 
 use Test::More tests => 7;
 
-use_ok 'Text::MediawikiFormat' or exit;
+use_ok 'Text::MediawikiFormat', as => 'wf', process_html => 0 or exit;
 ok exists $Text::MediawikiFormat::tags{blockorder},
    'T:MF should have a blockorder entry in %tags';
 
@@ -25,7 +25,7 @@ my $wikitext =<<END_HERE;
 * list item with a [[Wiki Link]]
 END_HERE
 
-my $htmltext = Text::MediawikiFormat::format ($wikitext);
+my $htmltext = wf ($wikitext);
 
 like $htmltext, qr!<li>first list item!,
      'lists should be able to start on the first line of text';
@@ -46,7 +46,7 @@ $wikitext =<<END_HERE;
 : indented 2
 END_HERE
 
-$htmltext = Text::MediawikiFormat::format ($wikitext);
+$htmltext = wf ($wikitext);
 
 is $htmltext, '<dl>
 <dt>Term 1</dt>

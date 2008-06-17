@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Test::More tests => 2;
-use Text::MediawikiFormat as => 'wikiformat';
+use Text::MediawikiFormat as => 'wf', process_html => 0;
 
 my $wikitext =<<WIKI;
 
@@ -24,7 +24,7 @@ WIKI
 
 my %format_tags = (blocks => {unordered => qr/^!\s*/});
  
-my $htmltext = wikiformat ($wikitext, \%format_tags, {});
+my $htmltext = wf ($wikitext, \%format_tags);
 like ($htmltext, qr!<li>But marked differently</li>!m,
       'redefining a list type works with use as');
 
@@ -37,6 +37,6 @@ like ($htmltext, qr!<li>But marked differently</li>!m,
 	indented => {unordered => 0},
 ); 
 
-$htmltext = wikiformat ($wikitext, \%format_tags, {});
+$htmltext = wf ($wikitext, \%format_tags);
 like ($htmltext, qr!<li>\* But not indented!m,
       'redefining a list type to require no indent works with use as');
