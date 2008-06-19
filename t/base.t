@@ -30,6 +30,8 @@ sub fetchsub
 
 my $tags = \%Text::MediawikiFormat::tags;
 local *Text::MediawikiFormat::tags = $tags;
+my $opts = \%Text::MediawikiFormat::opts;
+local *Text::MediawikiFormat::opts = $opts;
 
 my $sb = fetchsub '_start_block';
 my ($result) = $sb->('= heading =', $tags);
@@ -94,7 +96,7 @@ is @result, 2, '... not merging blocks at different levels';
 
 can_ok $module, '_process_blocks';
 my $pb     = fetchsub '_process_blocks';
-my @opts   = (tags => $tags, opts => {});
+my @opts   = (tags => $tags, opts => $opts);
 my @blocks = map {Text::MediawikiFormat::new_block (@$_, @opts)}
  		 ['header', text => [''], level => 0,
 		  args => ['==', 'my header']], ['end', text => [ '' ],
@@ -114,7 +116,7 @@ $blocks[2]{args} = [[], [], [] ];
 $blocks[4]{args} = [[2], [3], [5]];
 $blocks[4]{text}[3]{args} = [[], [], []];
 
-@result = $pb->(\@blocks, $tags);
+@result = $pb->(\@blocks, $tags, $opts);
 
 is @result, 1, '_process_blocks() should return processed text';
 $result = $result[0];

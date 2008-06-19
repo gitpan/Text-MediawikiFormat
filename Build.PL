@@ -38,6 +38,7 @@ my $build = $class->new(
 		'Scalar::Util'	=> '1.14',
 		'URI'		=> '',
 		'URI::Escape'	=> '',
+		'version'	=> '0.74',
 	},
 	recommends    =>
 	{
@@ -47,6 +48,8 @@ my $build = $class->new(
 	build_requires =>
 	{
 		'Test::More'   => 0.30,
+		'Test::NoWarnings'   => 0,
+		'Test::Warn'   => 0,
 	},
 	create_makefile_pl => 'traditional',
 	sign               => '1',

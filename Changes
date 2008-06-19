@@ -1,5 +1,20 @@
 Revision history for Text-MediawikiFormat
 
+1.0	June 19, 2008
+	- Empty tags are handled like they should be.  This should make it
+	  easier to implement <references /> & <ref name="previous" /> (fixes
+	  rt.cpan.org #25386).
+	- Disable HTML inside <pre> tags, as with <nowiki> tags (fixes
+	  rt.cpan.org #25417)
+	- Angle backets (<>) around URIs are ignored as per Mediawiki 1.12's
+	  observed behavior.
+	- Use "vars" pragma instead of "our" for Perl 5.005.
+	- Check for undefined values in the extended_link_delimiters field and
+	  warn but ignore when found (fixes rt.cpan.org #26879).
+	- Use uri_escape_utf8 unless charset is set to something other than
+	  utf-8 in the options hash (fixes rt.cpan.org #26880).
+	- Documentation fixes.
+
 0.06    June 17, 2008
 	- Tests skip HTML processing when HTML::Parser and HTML::Tagset are
 	  not installed.

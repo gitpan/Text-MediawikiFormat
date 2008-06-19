@@ -15,7 +15,8 @@ local *Text::MediawikiFormat::getCurrentStatic;
 	return \%constants;
 };
 
-use Test::More tests => 32;
+use Test::More tests => 34;
+use Test::NoWarnings;
 
 use_ok 'Text::MediawikiFormat';
 
@@ -41,9 +42,12 @@ WIKI
 
 ok %Text::MediawikiFormat::tags, 
    '%tags should be available from Text::MediawikiFormat';
-
 my %tags = %Text::MediawikiFormat::tags;
-my %opts = ( 
+
+ok %Text::MediawikiFormat::opts, 
+   '%opts should be available from Text::MediawikiFormat';
+my %opts = (
+	%Text::MediawikiFormat::opts,
 	prefix => 'rootdir/wiki.pl?page=',
 	implicit_links => 1,
 	extended => 0,

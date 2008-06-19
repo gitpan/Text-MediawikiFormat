@@ -5,7 +5,9 @@ BEGIN { chdir 't' if -d 't' }
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 3;
+use Test::NoWarnings;
+
 use Text::MediawikiFormat as => 'wf', process_html => 0;
 
 my $wikitext =<<WIKI;

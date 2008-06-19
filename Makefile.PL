@@ -7,8 +7,11 @@ WriteMakefile
           'PREREQ_PM' => {
                            'Scalar::Util' => '1.14',
                            'Test::More' => '0.3',
+                           'Test::NoWarnings' => '0',
+                           'Test::Warn' => '0',
                            'URI' => '',
-                           'URI::Escape' => ''
+                           'URI::Escape' => '',
+                           'version' => '0.74'
                          },
           'INSTALLDIRS' => 'site',
           'EXE_FILES' => [],

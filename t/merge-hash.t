@@ -5,7 +5,9 @@ BEGIN { chdir 't' if -d 't' }
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 9;
+use Test::NoWarnings;
+
 use_ok( 'Text::MediawikiFormat' ) or exit;
 
 my $full       = { foo => { bar => 'baz' } };

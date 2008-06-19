@@ -1,7 +1,7 @@
 package Text::MediawikiFormat::Blocks;
 
 use strict;
-use warnings;
+use warnings::register;
 
 sub import
 {
@@ -147,8 +147,8 @@ create your own block type.
 
 =head1 DESCRIPTION
 
-This module merely creates subclasses of Text::MediawikiFormat::Block, which is the
-interesting code.  A block is a collection of related lines, such as a code
+This module merely creates subclasses of Text::MediawikiFormat::Block, which is
+the interesting code.  A block is a collection of related lines, such as a code
 block (text to display verbatim in a monospaced font), a header, an unordered
 list, an ordered list, and a paragraph (text to display in a proportional
 font).

@@ -5,7 +5,9 @@ BEGIN { chdir 't' if -d 't' }
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 4;
+use Test::NoWarnings;
+
 use Text::MediawikiFormat as => 'wf', prefix => 'rootdir/wiki.pl?page=',
 			  process_html => 0;
 
