@@ -9,8 +9,8 @@ WriteMakefile
                            'Test::More' => '0.3',
                            'Test::NoWarnings' => '0',
                            'Test::Warn' => '0',
-                           'URI' => '',
-                           'URI::Escape' => '',
+                           'URI' => '0',
+                           'URI::Escape' => '0',
                            'version' => '0.74'
                          },
           'INSTALLDIRS' => 'site',

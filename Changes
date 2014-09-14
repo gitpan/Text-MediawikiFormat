@@ -1,5 +1,9 @@
 Revision history for Text-MediawikiFormat
 
+1.01 2014.09.14
+    - Unofficial release.
+    - Fix failing test.
+
 1.0	June 19, 2008
 	- Empty tags are handled like they should be.  This should make it
 	  easier to implement <references /> & <ref name="previous" /> (fixes

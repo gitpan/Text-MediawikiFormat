@@ -3,6 +3,8 @@ package Text::MediawikiFormat::Blocks;
 use strict;
 use warnings::register;
 
+our $VERSION = '1.01';
+
 sub import
 {
 	my $caller = caller();

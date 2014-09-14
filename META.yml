@@ -1,32 +1,28 @@
 ---
-name: Text-MediawikiFormat
-version: v1.0
-author: []
-abstract: Translate Wiki markup into other text formats
-license: perl
-resources:
-  license: http://dev.perl.org/licenses/
-requires:
-  Scalar::Util: 1.14
-  URI: ''
-  URI::Escape: ''
-  version: 0.74
+abstract: unknown
+author:
+  - unknown
 build_requires:
-  Test::More: 0.3
-  Test::NoWarnings: 0
-  Test::Warn: 0
-recommends:
-  HTML::Parser: ''
-  HTML::Tagset: ''
-provides:
-  Text::MediawikiFormat:
-    file: lib/Text/MediawikiFormat.pm
-    version: v1.0
-  Text::MediawikiFormat::Block:
-    file: lib/Text/MediawikiFormat/Blocks.pm
-  Text::MediawikiFormat::Blocks:
-    file: lib/Text/MediawikiFormat/Blocks.pm
-generated_by: Module::Build version 0.2808
+  ExtUtils::MakeMaker: '0'
+configure_requires:
+  ExtUtils::MakeMaker: '0'
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.142060'
+license: unknown
 meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: '1.4'
+name: Text-MediawikiFormat
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  Scalar::Util: '1.14'
+  Test::More: '0.3'
+  Test::NoWarnings: '0'
+  Test::Warn: '0'
+  URI: '0'
+  URI::Escape: '0'
+  version: '0.74'
+version: '1.01'

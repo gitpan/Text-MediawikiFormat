@@ -27,3 +27,4 @@ t/tag-override-use-as.t
 t/tag-override.t
 SIGNATURE    Added here by Module::Build
 SIGNATURE    Added here by Module::Build
+META.json                                Module JSON meta-data (added by MakeMaker)

@@ -9,12 +9,11 @@ Text::MediawikiFormat - Translate Wiki markup into other text formats
 
 =head1 VERSION
 
-Version 1.0
+Version 1.01
 
 =cut
 
-use vars qw($VERSION);
-use version; $VERSION = qv('1.0');
+our $VERSION = '1.01';
 
 =head1 SYNOPSIS
 

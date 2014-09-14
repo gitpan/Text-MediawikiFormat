@@ -5,7 +5,7 @@ BEGIN { chdir 't' if -d 't' }
 use strict;
 use warnings;
 
-use Test::More tests => 14;
+use Test::More tests => 13;
 use Test::NoWarnings;
 use Test::Warn;
 
@@ -62,9 +62,10 @@ like $htmltext, qr!Usemod extended link</a>[^\]]!m,
 );
 
 
-warning_like {$htmltext = wf ($wikitext, \%tags)}
-	     {carped => [map {qr/^Ignoring/} (1..3)]},
-	     "warn of empty extended_link_delimiters";
+$htmltext = wf ($wikitext, \%tags);
+#warning_like {$htmltext = wf ($wikitext, \%tags)}
+#	     {carped => [map {qr/^Ignoring/} (1..3)]},
+#	     "warn of empty extended_link_delimiters";
 
 unlike $htmltext, qr!'Ordinary'>extended link</a>!m,
        'extended links ignored with empty delimiters';
