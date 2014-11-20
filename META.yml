@@ -8,7 +8,7 @@ configure_requires:
   ExtUtils::MakeMaker: '0'
 dynamic_config: 1
 generated_by: 'ExtUtils::MakeMaker version 6.98, CPAN::Meta::Converter version 2.142060'
-license: unknown
+license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: '1.4'
@@ -18,6 +18,8 @@ no_index:
     - t
     - inc
 requires:
+  HTML::Parser: '0'
+  HTML::Tagset: '0'
   Scalar::Util: '1.14'
   Test::More: '0.3'
   Test::NoWarnings: '0'
@@ -25,4 +27,7 @@ requires:
   URI: '0'
   URI::Escape: '0'
   version: '0.74'
-version: '1.01'
+resources:
+  bugtracker: http://github.com/szabgab/Text-MediawikiFormat/issues
+  repository: http://github.com/szabgab/Text-MediawikiFormat.git
+version: '1.02'

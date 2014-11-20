@@ -1,5 +1,11 @@
 Revision history for Text-MediawikiFormat
 
+1.02 2014.11.20
+    - New maintainer
+    - Add GitHub links to META files
+    - Add license to META files
+    - Remove Build.PL and only use Makefile.PL
+
 1.01 2014.09.14
     - Unofficial release.
     - Fix failing test.
