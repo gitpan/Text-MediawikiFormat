@@ -1,5 +1,8 @@
 Revision history for Text-MediawikiFormat
 
+1.03 2014.11.20
+    - Move package Text::MediawikiFormat::Block to its own file.
+
 1.02 2014.11.20
     - New maintainer
     - Add GitHub links to META files

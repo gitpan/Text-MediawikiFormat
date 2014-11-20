@@ -30,4 +30,4 @@ requires:
 resources:
   bugtracker: http://github.com/szabgab/Text-MediawikiFormat/issues
   repository: http://github.com/szabgab/Text-MediawikiFormat.git
-version: '1.02'
+version: '1.03'
