@@ -18,6 +18,7 @@ no_index:
     - t
     - inc
 requires:
+  CGI: '0'
   HTML::Parser: '0'
   HTML::Tagset: '0'
   Scalar::Util: '1.14'
@@ -30,4 +31,4 @@ requires:
 resources:
   bugtracker: http://github.com/szabgab/Text-MediawikiFormat/issues
   repository: http://github.com/szabgab/Text-MediawikiFormat.git
-version: '1.03'
+version: '1.04'

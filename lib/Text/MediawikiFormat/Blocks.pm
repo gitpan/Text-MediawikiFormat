@@ -5,19 +5,17 @@ use warnings::register;
 
 use Text::MediawikiFormat::Block;
 
-our $VERSION = '1.03';
+our $VERSION = '1.04';
 
-sub import
-{
+sub import {
 	my $caller = caller();
 	no strict 'refs';
-	*{ $caller . '::new_block' } = sub
-	{
+	*{ $caller . '::new_block' } = sub {
 		my $type  = shift;
 		my $class = "Text::MediawikiFormat::Block::$type";
-		
-		*{ $class . '::ISA' } = [ 'Text::MediawikiFormat::Block' ]
-			unless $class->can( 'new' );
+
+		*{ $class . '::ISA' } = ['Text::MediawikiFormat::Block']
+			unless $class->can('new');
 
 		return $class->new( type => $type, @_ );
 	};

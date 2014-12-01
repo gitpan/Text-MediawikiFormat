@@ -9,34 +9,28 @@ use Test::More tests => 8;
 use Test::NoWarnings;
 
 use_ok 'Text::MediawikiFormat', as => 'wf', process_html => 0 or exit;
-ok exists $Text::MediawikiFormat::tags{blockorder},
-   'T:MF should have a blockorder entry in %tags';
+ok exists $Text::MediawikiFormat::tags{blockorder}, 'T:MF should have a blockorder entry in %tags';
 
 # isan ARRAY
-isa_ok $Text::MediawikiFormat::tags{blockorder}, 'ARRAY',
-       '...and it should be an array';
+isa_ok $Text::MediawikiFormat::tags{blockorder}, 'ARRAY', '...and it should be an array';
 
-like join(' ', @{$Text::MediawikiFormat::tags{blockorder}}),
-     qr/^code/,
-     '...and code should come before everything';
+like join( ' ', @{ $Text::MediawikiFormat::tags{blockorder} } ), qr/^code/, '...and code should come before everything';
 
-my $wikitext =<<END_HERE;
+my $wikitext = <<END_HERE;
 * first list item
 * second list item
 * list item with a [[Wiki Link]]
 END_HERE
 
-my $htmltext = wf ($wikitext);
+my $htmltext = wf($wikitext);
 
-like $htmltext, qr!<li>first list item!,
-     'lists should be able to start on the first line of text';
-like $htmltext, qr!href='Wiki%20Link'!,
-     'list item content should be formatted';
+like $htmltext, qr!<li>first list item!, 'lists should be able to start on the first line of text';
+like $htmltext, qr!href='Wiki%20Link'!,  'list item content should be formatted';
 
 ###
 ### Dictionary Lists
 ###
-$wikitext =<<END_HERE;
+$wikitext = <<END_HERE;
 ; Term 1 : definition 1.1
 : definition 1.2
 ; Term 2
@@ -47,7 +41,7 @@ $wikitext =<<END_HERE;
 : indented 2
 END_HERE
 
-$htmltext = wf ($wikitext);
+$htmltext = wf($wikitext);
 
 is $htmltext, '<dl>
 <dt>Term 1</dt>
@@ -61,5 +55,4 @@ is $htmltext, '<dl>
 <dd>indented 1</dd>
 <dd>indented 2</dd>
 </dl>
-',
-   'dictionary lists format correctly';
+', 'dictionary lists format correctly';

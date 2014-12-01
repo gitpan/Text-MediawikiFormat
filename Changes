@@ -1,19 +1,23 @@
 Revision history for Text-MediawikiFormat
 
+1.04 2014.12.01
+	- Add CGI as prerequisite.
+	- 
+
 1.03 2014.11.20
-    - Move package Text::MediawikiFormat::Block to its own file.
+	- Move package Text::MediawikiFormat::Block to its own file.
 
 1.02 2014.11.20
-    - New maintainer
-    - Add GitHub links to META files
-    - Add license to META files
-    - Remove Build.PL and only use Makefile.PL
+	- New maintainer
+	- Add GitHub links to META files
+	- Add license to META files
+	- Remove Build.PL and only use Makefile.PL
 
 1.01 2014.09.14
-    - Unofficial release.
-    - Fix failing test.
+	- Unofficial release.
+	- Fix failing test.
 
-1.0	June 19, 2008
+1.0 2008.06.19
 	- Empty tags are handled like they should be.  This should make it
 	  easier to implement <references /> & <ref name="previous" /> (fixes
 	  rt.cpan.org #25386).
@@ -28,28 +32,28 @@ Revision history for Text-MediawikiFormat
 	  utf-8 in the options hash (fixes rt.cpan.org #26880).
 	- Documentation fixes.
 
-0.06    June 17, 2008
+0.06 2008.06.17
 	- Tests skip HTML processing when HTML::Parser and HTML::Tagset are
 	  not installed.
 	- format() actually processes the options hash.
 	- Change _clone to Return arrays and a deep copy of hashes. 
 	  Rather than a copy of arrays.
 
-0.05    September 28, 2006
+0.05 2006.09.28
 	- Remove the <> when linkifying <http://absolute.link>.
 
-0.04	September 27, 2006
+0.04 2006.09.27
 	- Process absolute links more robustly.
 
-0.03	September 27, 2006
+0.03 2006.09.27
 	- Default to absolute_links => 1.
 	- Prefer "our" to "use vars".
 
-0.02	September 26, 2006
+0.02 2006.09.26
 	- Improved documentation.
 	- Defaults to Mediawiki behaviors.
 
-0.01	September 20, 2006
+0.01 2006.0.20
 	- Avoid applying wikification when block level allowed html elements
 	  are present, when process_html option is set.
 	- content of list items is now formatted by default.

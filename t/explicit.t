@@ -11,7 +11,7 @@ use Test::Warn;
 
 use Text::MediawikiFormat as => 'wf', process_html => 0;
 
-my $wikitext =<<WIKI;
+my $wikitext = <<WIKI;
 
 [Ordinary extended link]
 
@@ -21,55 +21,39 @@ my $wikitext =<<WIKI;
 
 WIKI
 
-my $htmltext = wf ($wikitext);
-like $htmltext, qr!'Ordinary'>extended link</a>!m,
-     'extended links rendered correctly with default delimiters';
-like $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m,
-     'explicit URIs rendered correctly with default delimiters';
+my $htmltext = wf($wikitext);
+like $htmltext, qr!'Ordinary'>extended link</a>!m, 'extended links rendered correctly with default delimiters';
+like $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m, 'explicit URIs rendered correctly with default delimiters';
 like $htmltext, qr!Usemod%20extended%20link'>Usemod extended link</a>!m,
-     'Wiki URIs rendered correctly with default delimiters';
+	'Wiki URIs rendered correctly with default delimiters';
 
 # Redefine the delimiters to the same thing again.
-my %tags = (
-	extended_link_delimiters => qr/(\[(?:\[[^][]*\]|[^][]*)\])/,
-);
+my %tags = ( extended_link_delimiters => qr/(\[(?:\[[^][]*\]|[^][]*)\])/, );
 
-$htmltext = wf ($wikitext, \%tags);
-like $htmltext, qr!'Ordinary'>extended link</a>!m,
-     'extended links rendered correctly with default delimiters';
-like $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m,
-     'explicit URIs rendered correctly with default delimiters';
+$htmltext = wf( $wikitext, \%tags );
+like $htmltext, qr!'Ordinary'>extended link</a>!m, 'extended links rendered correctly with default delimiters';
+like $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m, 'explicit URIs rendered correctly with default delimiters';
 like $htmltext, qr!Usemod%20extended%20link'>Usemod extended link</a>!m,
-     'Wiki URIs rendered correctly with default delimiters';
+	'Wiki URIs rendered correctly with default delimiters';
 
 # Redefine the delimiters to something different.
-%tags = (
-	extended_link_delimiters => [qw([ ])],
-);
+%tags = ( extended_link_delimiters => [qw([ ])], );
 
-$htmltext = wf ($wikitext, \%tags);
+$htmltext = wf( $wikitext, \%tags );
 
-unlike $htmltext, qr!'Ordinary'>extended link</a>!m,
-       'extended links ignored with overridden delimiters';
-unlike $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m,
-       'explicit URIs ignored with overridden delimiters';
-like $htmltext, qr!Usemod extended link</a>[^\]]!m,
-     '...and new delimiters recognised';
+unlike $htmltext, qr!'Ordinary'>extended link</a>!m,           'extended links ignored with overridden delimiters';
+unlike $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m, 'explicit URIs ignored with overridden delimiters';
+like $htmltext,   qr!Usemod extended link</a>[^\]]!m,          '...and new delimiters recognised';
 
 # Make sure we handle empty delimiters
-%tags = (
-	extended_link_delimiters => '',
-);
+%tags = ( extended_link_delimiters => '', );
 
+$htmltext = wf( $wikitext, \%tags );
 
-$htmltext = wf ($wikitext, \%tags);
 #warning_like {$htmltext = wf ($wikitext, \%tags)}
 #	     {carped => [map {qr/^Ignoring/} (1..3)]},
 #	     "warn of empty extended_link_delimiters";
 
-unlike $htmltext, qr!'Ordinary'>extended link</a>!m,
-       'extended links ignored with empty delimiters';
-unlike $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m,
-       'explicit URIs ignored with empty delimiters';
-unlike $htmltext, qr!Usemod extended link</a>[^\]]!m,
-       'Wiki URIs ignored with empty delimiters';
+unlike $htmltext, qr!'Ordinary'>extended link</a>!m,           'extended links ignored with empty delimiters';
+unlike $htmltext, qr!'http://nowhere\.com'>explicit URI</a>!m, 'explicit URIs ignored with empty delimiters';
+unlike $htmltext, qr!Usemod extended link</a>[^\]]!m,          'Wiki URIs ignored with empty delimiters';

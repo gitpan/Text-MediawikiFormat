@@ -10,20 +10,18 @@ use Test::NoWarnings;
 
 use_ok 'Text::MediawikiFormat', as => 'wf', process_html => 0 or exit;
 
-my $wikitext =<<END_HERE;
+my $wikitext = <<END_HERE;
 * start of list
 * second line
 ** indented list
 * now back to the first
 END_HERE
 
-my $htmltext = wf ($wikitext);
-like $htmltext, qr|second line<ul>.*?<li>indented|s,
-     'nested lists should start correctly';
-like $htmltext, qr|indented list.*?</li>.*?</ul>|s,
-     '... and end correctly';
+my $htmltext = wf($wikitext);
+like $htmltext, qr|second line<ul>.*?<li>indented|s, 'nested lists should start correctly';
+like $htmltext, qr|indented list.*?</li>.*?</ul>|s,  '... and end correctly';
 
-$wikitext =<<END_HERE;
+$wikitext = <<END_HERE;
 * 1
 * 2
 ** 2.1
@@ -37,10 +35,9 @@ $wikitext =<<END_HERE;
 * 5
 END_HERE
 
-$htmltext = wf ($wikitext);
+$htmltext = wf($wikitext);
 
-like $htmltext,
-     qr|<ul>\s*
+like $htmltext, qr|<ul>\s*
 	<li>1</li>\s*
 	<li>2<ul>\s*
 	<li>2\.1<ul>\s*
@@ -61,23 +58,18 @@ like $htmltext,
 	</ul>\s*
 	</li>\s*
 	<li>5</li>\s*
-	</ul>|sx,
-     'nesting should be correct for multiple levels';
-like $htmltext, qr|<li>4<|s,
-     'spaces should work instead of tabs';
-like $htmltext,
-     qr|<li>4<ul>\s*<li>4.1<ul>\s*<li>4.1.1</li>\s*<li>4.1.2</li>\s*</ul>
-	\s*</li>|sx,
-     'nesting should be correct for spaces too';
-
+	</ul>|sx, 'nesting should be correct for multiple levels';
+like $htmltext, qr|<li>4<|s, 'spaces should work instead of tabs';
+like $htmltext, qr|<li>4<ul>\s*<li>4.1<ul>\s*<li>4.1.1</li>\s*<li>4.1.2</li>\s*</ul>
+	\s*</li>|sx, 'nesting should be correct for spaces too';
 
 TODO: {
-     local $TODO = 'Dictionary lists not nesting correctly.';
+	local $TODO = 'Dictionary lists not nesting correctly.';
 
 ###
 ### Dictionary Lists
 ###
-$wikitext =<<END_HERE;
+	$wikitext = <<END_HERE;
 ; Term 1
 : Def 1.1
 :; Term 1.1.1 : Def 1.1.1.1
@@ -93,11 +85,11 @@ $wikitext =<<END_HERE;
 ; Term 3 : Def 3.1
 END_HERE
 
-$htmltext = wf ($wikitext);
+	$htmltext = wf($wikitext);
 
-is $htmltext, '', 'dictionary lists nest correctly';
+	is $htmltext, '', 'dictionary lists nest correctly';
 
-$wikitext =<<END_HERE;
+	$wikitext = <<END_HERE;
 ; A
 : A.a
 :# A.a.1
@@ -109,9 +101,9 @@ $wikitext =<<END_HERE;
 : A.b
 END_HERE
 
-$htmltext = wf ($wikitext);
+	$htmltext = wf($wikitext);
 
-is $htmltext, '<dl>
+	is $htmltext, '<dl>
 <dt>A</dt>
 <dd>A.a</dd>
 <ol>
@@ -131,4 +123,4 @@ is $htmltext, '<dl>
 <dd>A.b</dd>
 </dl>
 ', 'lists nest correctly within dictionary lists';
-};
+}

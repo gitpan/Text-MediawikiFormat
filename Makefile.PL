@@ -1,26 +1,25 @@
 use ExtUtils::MakeMaker;
-my %conf = 
-(
-          'NAME' => 'Text::MediawikiFormat',
-          'VERSION_FROM' => 'lib/Text/MediawikiFormat.pm',
-          'PREREQ_PM' => {
-                           'Scalar::Util' => '1.14',
-                           'Test::More' => '0.3',
-                           'Test::NoWarnings' => '0',
-                           'Test::Warn' => '0',
-                           'URI' => '0',
-                           'URI::Escape' => '0',
-                           'version' => '0.74',
-                           'HTML::Parser' => '0', # recommended only
-                           'HTML::Tagset' => '0', # recommented only
+my %conf = (
+	'NAME'         => 'Text::MediawikiFormat',
+	'VERSION_FROM' => 'lib/Text/MediawikiFormat.pm',
+	'PREREQ_PM'    => {
+		'CGI'              => '0',
+		'Scalar::Util'     => '1.14',
+		'Test::More'       => '0.3',
+		'Test::NoWarnings' => '0',
+		'Test::Warn'       => '0',
+		'URI'              => '0',
+		'URI::Escape'      => '0',
+		'version'          => '0.74',
+		'HTML::Parser'     => '0',      # recommended only
+		'HTML::Tagset'     => '0',      # recommented only
 
-                         },
-          'INSTALLDIRS' => 'site',
-          'LICENSE'      => 'perl',
-          'EXE_FILES' => [],
-          'PL_FILES' => {}
-        )
-;
+	},
+	'INSTALLDIRS' => 'site',
+	'LICENSE'     => 'perl',
+	'EXE_FILES'   => [],
+	'PL_FILES'    => {}
+);
 
 if ( eval { ExtUtils::MakeMaker->VERSION(6.46) } ) {
 	$conf{META_MERGE} = {
@@ -38,7 +37,6 @@ if ( eval { ExtUtils::MakeMaker->VERSION(6.46) } ) {
 		},
 	};
 }
-
 
 WriteMakefile(%conf);
 
